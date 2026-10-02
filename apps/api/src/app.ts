@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { config } from './config/env';
 import { errorHandler } from './middleware/error.middleware';
 import authRoutes from './modules/auth/auth.routes';
+import propertyRoutes from './modules/properties/property.routes';
 
 const app: Application = express();
 
@@ -43,6 +44,7 @@ app.get('/', (_req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/properties', propertyRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
