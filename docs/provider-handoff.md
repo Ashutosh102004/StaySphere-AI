@@ -1,21 +1,23 @@
 # Provider Handoff Document
 
 **Date:** 2026-10-02  
-**Handoff Context:** PHASE 5.A completion
+**Handoff Context:** PHASE 6 completion
 
 ---
 
 ## What Just Happened
 
-Completed **PHASE 5.A: Backend Property Foundation** - full property management system with CRUD operations, search, filtering, and RBAC integration.
+Completed **PHASE 6: Booking System** - full booking management system with conflict detection, availability checking, and authorization.
 
-**Commit:** `3233549` - feat(api): implement property management system
+**Commits:**
+- `3233549` - feat(api): implement property management system (PHASE 5.A)
+- `f904289` - feat(api): implement booking system with conflict detection (PHASE 6)
 
 ---
 
 ## Files Modified/Created
 
-### New Files
+### New Files (PHASE 5.A)
 ```
 apps/api/src/modules/properties/property.controller.ts
 apps/api/src/modules/properties/property.routes.ts
@@ -23,16 +25,24 @@ apps/api/src/modules/properties/property.service.ts
 apps/api/src/modules/properties/property.validation.ts
 ```
 
+### New Files (PHASE 6)
+```
+apps/api/src/modules/bookings/booking.controller.ts
+apps/api/src/modules/bookings/booking.routes.ts
+apps/api/src/modules/bookings/booking.service.ts
+apps/api/src/modules/bookings/booking.validation.ts
+```
+
 ### Modified Files
 ```
-apps/api/src/app.ts (added property routes)
+apps/api/src/app.ts (added property and booking routes)
 ```
 
 ---
 
 ## What Works Now
 
-### Property Management
+### Property Management (PHASE 5.A)
 - ✅ Create properties (HOST/ADMIN only)
 - ✅ Read properties (public for published, authenticated for all)
 - ✅ Update properties (owner/ADMIN only)
@@ -40,7 +50,7 @@ apps/api/src/app.ts (added property routes)
 - ✅ Publish/unpublish properties
 - ✅ List user's properties with pagination
 
-### Search & Filtering
+### Property Search & Filtering
 - ✅ Search by location (city, country)
 - ✅ Filter by price range (min/max)
 - ✅ Filter by guest capacity
@@ -49,18 +59,30 @@ apps/api/src/app.ts (added property routes)
 - ✅ Pagination (page, limit)
 - ✅ Sorting (any field, asc/desc)
 
+### Booking System (PHASE 6)
+- ✅ Create bookings with automatic price calculation
+- ✅ Check property availability for date ranges
+- ✅ Prevent overlapping bookings with conflict detection
+- ✅ View bookings by guest (my-bookings)
+- ✅ View bookings by host (host/bookings)
+- ✅ Update booking status (CONFIRMED, CANCELLED, COMPLETED)
+- ✅ Cancel bookings with authorization checks
+- ✅ 15-minute payment expiration timer
+- ✅ Guest details collection
+
 ### Authorization
-- ✅ Public endpoints for property search and viewing published properties
+- ✅ Public endpoints for property search and availability checking
 - ✅ Protected endpoints require authentication
 - ✅ Owner validation for property modifications
-- ✅ ADMIN role can modify any property
+- ✅ Guest/host/admin authorization for bookings
+- ✅ ADMIN role can modify any property or booking
 
 ---
 
 ## Architecture
 
 ### Property Model
-Located in `property.model.ts` (already existed in database layer):
+Located in `property.model.ts`:
 - hostId reference to User
 - Location with optional coordinates (2dsphere index for geospatial)
 - Pricing with currency
@@ -69,11 +91,22 @@ Located in `property.model.ts` (already existed in database layer):
 - Published status
 - Rating and review count
 
+### Booking Model
+Located in `booking.model.ts`:
+- guestId and propertyId references
+- checkIn/checkOut dates with validation
+- Guest details array (firstName, lastName, email, phone)
+- Total price calculation
+- Status tracking (PENDING, PAYMENT_PENDING, CONFIRMED, CANCELLED, COMPLETED, REFUND_PENDING, REFUNDED, FAILED)
+- Payment expiration timer
+- Compound indexes for conflict detection queries
+
 ### Service Layer
-`PropertyService` class handles all business logic:
+Both `PropertyService` and `BookingService` handle business logic:
 - CRUD operations
-- Search with complex filters
-- Ownership validation
+- Complex queries and filtering
+- Date conflict detection (bookings)
+- Authorization validation
 - Pagination
 
 ### Controller Layer
@@ -81,11 +114,13 @@ Request handlers using:
 - Zod validation for input
 - `asyncHandler` wrapper for error handling
 - `ApiResponse` utility for consistent responses
+- Authorization checks before operations
 
 ### Routes
 Separated public and protected routes:
-- Public: search, view published properties
-- Protected: create, update, delete, publish, list my properties
+- Public: property search, availability checking
+- Authenticated: bookings CRUD, my-bookings
+- Host/Admin: property management, booking status updates
 
 ---
 
@@ -94,9 +129,16 @@ Separated public and protected routes:
 ✅ All TypeScript compilation passes with no errors.
 
 Zod schemas provide runtime validation:
+
+**Property schemas:**
 - `createPropertySchema` - full validation for new properties
 - `updatePropertySchema` - partial validation for updates
 - `publishPropertySchema` - publish/unpublish boolean
+
+**Booking schemas:**
+- `createBookingSchema` - validates dates, guest count, and guest details
+- `updateBookingStatusSchema` - status transitions
+- `cancelBookingSchema` - optional cancellation reason
 
 ---
 
@@ -113,12 +155,16 @@ No test files exist yet. The implementation was verified through:
 
 ### From PHASE 5 (Property Management)
 - **Image upload/storage** - only accepts image URLs currently
-- **Availability calendar** - no booking date tracking yet
-- **Geospatial search** - 2dsphere index exists but no radius search implemented
+- **Geospatial radius search** - 2dsphere index exists but no radius search implemented
 - **Property analytics** - no view counts or engagement metrics
 
+### From PHASE 6 (Booking System)
+- **Payment integration** - bookings expire after 15 minutes but no actual payment processing
+- **Email notifications** - no confirmation emails sent
+- **Refund processing** - status tracking exists but no actual refunds
+- **Calendar UI integration** - backend availability API ready but no frontend calendar
+
 ### Future Phases
-- Booking system (PHASE 6)
 - Review system (PHASE 7)
 - Admin dashboard (PHASE 8)
 - AI features (PHASE 9)
@@ -127,17 +173,18 @@ No test files exist yet. The implementation was verified through:
 
 ## How to Resume
 
-### To Continue Property Features (PHASE 5.B)
-1. Implement image upload with storage (Cloudinary/S3)
-2. Add availability calendar integration
-3. Implement geospatial radius search
-4. Add property view analytics
+### To Continue Property/Booking Features (PHASE 5.B/6.B)
+1. Implement payment integration (Stripe, Razorpay)
+2. Add email notifications for booking confirmations/cancellations
+3. Implement image upload with storage (Cloudinary/S3)
+4. Implement geospatial radius search
+5. Add property view analytics
 
-### To Start Next Phase (PHASE 6: Booking System)
-1. Create Booking model
-2. Implement booking CRUD
-3. Add date conflict detection
-4. Integrate with property availability
+### To Start Next Phase (PHASE 7: Review System)
+1. Create Review model
+2. Implement review CRUD with rating aggregation
+3. Add review validation (only confirmed bookings can review)
+4. Update property ratings based on reviews
 
 ---
 
@@ -175,17 +222,20 @@ git status
 
 ## Next Provider Should Know
 
-1. The property system is complete for basic CRUD operations
+1. Property and booking systems are complete for basic CRUD operations
 2. All endpoints follow consistent patterns (asyncHandler, ApiResponse, Zod validation)
 3. RBAC is properly integrated - test with different user roles
-4. The system is ready for booking integration (PHASE 6)
-5. No breaking changes to existing auth/user systems
+4. Booking conflict detection prevents overlapping reservations
+5. The booking model includes payment status tracking but no actual payment integration yet
+6. System is ready for review integration (PHASE 7) - bookings can be reviewed after completion
+7. No breaking changes to existing auth/user/property systems
 
 ---
 
 ## Questions to Ask User (if needed)
 
+- Which payment provider to integrate (Stripe, Razorpay, PayPal)?
+- Which email service for notifications (SendGrid, AWS SES, Mailgun)?
 - Which image storage provider to use (Cloudinary, AWS S3, local)?
-- Should we proceed to PHASE 5.B or move to PHASE 6?
-- Are there specific property search features needed?
-- Any changes to the property data model before building bookings?
+- Should we proceed to PHASE 7 (reviews) or complete payment integration first?
+- Are there specific review moderation features needed?

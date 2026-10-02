@@ -1,9 +1,9 @@
 # StaySphere AI - Project Checkpoint
 
 **Last Updated:** 2026-10-02  
-**Current Phase:** PHASE 5.A COMPLETED  
+**Current Phase:** PHASE 6 COMPLETED  
 **Git Branch:** master  
-**Latest Commit:** 3233549 - feat(api): implement property management system
+**Latest Commit:** f904289 - feat(api): implement booking system with conflict detection
 
 ---
 
@@ -42,6 +42,16 @@
 - RBAC integration
 - REST API endpoints
 
+### ✅ PHASE 6: Booking System
+- Booking model with guest details and status tracking
+- Date conflict detection to prevent overlapping bookings
+- Property availability checking
+- Automatic price calculation based on nights
+- Booking status management (PENDING, CONFIRMED, CANCELLED, COMPLETED)
+- Guest, host, and admin authorization
+- 15-minute payment expiration timer
+- REST API endpoints
+
 ---
 
 ## Current Project State
@@ -60,12 +70,14 @@
 - User (with authentication)
 - Session (JWT token management)
 - Property (with location, pricing, amenities)
+- Booking (with date conflict prevention)
 
 **API Endpoints:**
 ```
 POST   /api/v1/auth/login
 POST   /api/v1/auth/logout
 POST   /api/v1/auth/refresh
+
 GET    /api/v1/properties/search
 GET    /api/v1/properties/:id
 POST   /api/v1/properties (HOST, ADMIN)
@@ -73,6 +85,14 @@ GET    /api/v1/properties/my/properties (HOST, ADMIN)
 PATCH  /api/v1/properties/:id (HOST, ADMIN)
 DELETE /api/v1/properties/:id (HOST, ADMIN)
 PATCH  /api/v1/properties/:id/publish (HOST, ADMIN)
+
+GET    /api/v1/bookings/properties/:propertyId/availability
+POST   /api/v1/bookings (authenticated)
+GET    /api/v1/bookings/my-bookings (authenticated)
+GET    /api/v1/bookings/:id (authenticated)
+GET    /api/v1/bookings/host/bookings (HOST, ADMIN)
+PATCH  /api/v1/bookings/:id/status (HOST, ADMIN)
+PATCH  /api/v1/bookings/:id/cancel (authenticated)
 ```
 
 **Type Safety:** ✅ TypeScript compilation passes with no errors
@@ -93,16 +113,8 @@ PATCH  /api/v1/properties/:id/publish (HOST, ADMIN)
 
 ### PHASE 5.B: Advanced Property Features (Not Started)
 - Image upload and management
-- Availability calendar
-- Geospatial search
+- Geospatial radius search
 - Property analytics
-
-### PHASE 6: Booking System (Not Started)
-- Booking model
-- Create/cancel bookings
-- Booking status management
-- Conflict detection
-- Calendar integration
 
 ### PHASE 7: Review System (Not Started)
 - Review model
