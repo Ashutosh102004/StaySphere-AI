@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { registerSchema, loginSchema } from './auth.validation';
 import { asyncHandler } from '@/utils/async-handler';
@@ -50,7 +50,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   }, 'Login successful');
 });
 
-export const logout = asyncHandler(async (req: Request, res: Response) => {
+export const logout = asyncHandler(async (_req: Request, res: Response) => {
   res.clearCookie('refreshToken');
   return ApiResponse.success(res, null, 'Logout successful');
 });

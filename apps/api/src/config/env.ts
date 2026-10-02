@@ -29,4 +29,4 @@ export const config = {
     providerKey: process.env.IDENTITY_PROVIDER_KEY || '',
     webhookSecret: process.env.IDENTITY_WEBHOOK_SECRET || '',
   },
-} as const;
+};

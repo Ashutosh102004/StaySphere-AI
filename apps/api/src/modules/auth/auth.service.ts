@@ -84,28 +84,28 @@ export class AuthService {
   }
 
   private generateAccessToken(user: IUser): string {
-    return jwt.sign(
-      {
-        userId: user._id.toString(),
-        email: user.email,
-        role: user.role,
-      },
-      config.jwt.accessSecret,
-      {
-        expiresIn: config.jwt.accessExpiration,
-      }
-    );
+    const payload = {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    };
+    const secret = config.jwt.accessSecret;
+    const options = {
+      expiresIn: config.jwt.accessExpiration,
+    } as jwt.SignOptions;
+
+    return jwt.sign(payload, secret, options);
   }
 
   private generateRefreshToken(user: IUser): string {
-    return jwt.sign(
-      {
-        userId: user._id.toString(),
-      },
-      config.jwt.refreshSecret,
-      {
-        expiresIn: config.jwt.refreshExpiration,
-      }
-    );
+    const payload = {
+      userId: user._id.toString(),
+    };
+    const secret = config.jwt.refreshSecret;
+    const options = {
+      expiresIn: config.jwt.refreshExpiration,
+    } as jwt.SignOptions;
+
+    return jwt.sign(payload, secret, options);
   }
 }

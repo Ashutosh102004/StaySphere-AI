@@ -9,7 +9,8 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return ApiResponse.error(res, 'No token provided', 'AUTHENTICATION_ERROR', 401);
+      ApiResponse.error(res, 'No token provided', 'AUTHENTICATION_ERROR', 401);
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -23,6 +24,6 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 
     next();
   } catch (error) {
-    return ApiResponse.error(res, 'Invalid or expired token', 'AUTHENTICATION_ERROR', 401);
+    ApiResponse.error(res, 'Invalid or expired token', 'AUTHENTICATION_ERROR', 401);
   }
 };
