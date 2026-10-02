@@ -1,7 +1,10 @@
 import express, { Application, Request, Response } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { config } from './config/env';
+import { errorHandler } from './middleware/error.middleware';
+import authRoutes from './modules/auth/auth.routes';
 
 const app: Application = express();
 
@@ -17,6 +20,7 @@ app.use(
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
@@ -36,5 +40,11 @@ app.get('/', (_req: Request, res: Response) => {
     status: 'Running',
   });
 });
+
+// API Routes
+app.use('/api/v1/auth', authRoutes);
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
 
 export default app;
