@@ -7,6 +7,7 @@ import { errorHandler } from './middleware/error.middleware';
 import authRoutes from './modules/auth/auth.routes';
 import propertyRoutes from './modules/properties/property.routes';
 import bookingRoutes from './modules/bookings/booking.routes';
+import reviewRoutes from './modules/reviews/review.routes';
 
 const app: Application = express();
 
@@ -47,6 +48,7 @@ app.get('/', (_req: Request, res: Response) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/properties', propertyRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
+app.use('/api/v1/reviews', reviewRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
