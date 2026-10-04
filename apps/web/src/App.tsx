@@ -26,6 +26,8 @@ import { TicketDetailsPage } from '@/pages/support-ticket-details';
 import { AdminAnalyticsDashboard } from '@/pages/admin/analytics';
 import { AdminUsersPage } from '@/pages/admin/users';
 import { AdminPropertiesPage } from '@/pages/admin/properties';
+import { AIChatPage } from '@/pages/ai-chat';
+import { PropertyRecommendationsPage } from '@/pages/property-recommendations';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -136,6 +138,24 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['ADMIN']}>
                       <AdminPropertiesPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* AI Routes */}
+                <Route
+                  path="/ai-chat"
+                  element={
+                    <ProtectedRoute>
+                      <AIChatPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/recommendations"
+                  element={
+                    <ProtectedRoute>
+                      <PropertyRecommendationsPage />
                     </ProtectedRoute>
                   }
                 />
