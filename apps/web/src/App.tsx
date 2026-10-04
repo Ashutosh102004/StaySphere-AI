@@ -28,6 +28,7 @@ import { AdminUsersPage } from '@/pages/admin/users';
 import { AdminPropertiesPage } from '@/pages/admin/properties';
 import { AIChatPage } from '@/pages/ai-chat';
 import { PropertyRecommendationsPage } from '@/pages/property-recommendations';
+import { WishlistPage } from '@/pages/wishlist';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -163,10 +164,7 @@ function App() {
                   path="/wishlist"
                   element={
                     <ProtectedRoute>
-                      <div className="container py-12">
-                        <h1 className="text-3xl font-bold">Wishlist</h1>
-                        <p className="text-muted-foreground mt-4">Coming soon...</p>
-                      </div>
+                      <WishlistPage />
                     </ProtectedRoute>
                   }
                 />
