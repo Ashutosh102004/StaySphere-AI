@@ -20,6 +20,7 @@ import { BookingDetailsPage } from '@/pages/booking-details';
 import { CheckoutPage } from '@/pages/checkout';
 import { OrderHistoryPage } from '@/pages/order-history';
 import { HostEarningsPage } from '@/pages/host/earnings';
+import { IdentityVerificationPage } from '@/pages/identity-verification';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +81,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <OrderHistoryPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/verify"
+                  element={
+                    <ProtectedRoute>
+                      <IdentityVerificationPage />
                     </ProtectedRoute>
                   }
                 />
