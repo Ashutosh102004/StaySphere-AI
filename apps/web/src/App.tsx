@@ -11,6 +11,9 @@ import { RegisterPage } from '@/pages/register';
 import { DashboardPage } from '@/pages/dashboard';
 import { PropertyDetailsPage } from '@/pages/property-details';
 import { PropertyAvailabilityPage } from '@/pages/host/property-availability';
+import { SearchPage } from '@/pages/search';
+import { MyBookingsPage } from '@/pages/my-bookings';
+import { BookingDetailsPage } from '@/pages/booking-details';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,10 +49,15 @@ function App() {
                   path="/bookings"
                   element={
                     <ProtectedRoute>
-                      <div className="container py-12">
-                        <h1 className="text-3xl font-bold">My Trips</h1>
-                        <p className="text-muted-foreground mt-4">Coming soon...</p>
-                      </div>
+                      <MyBookingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/bookings/:bookingId"
+                  element={
+                    <ProtectedRoute>
+                      <BookingDetailsPage />
                     </ProtectedRoute>
                   }
                 />
@@ -92,7 +100,7 @@ function App() {
                 />
 
                 {/* Public Routes */}
-                <Route path="/search" element={<div className="container py-12"><h1 className="text-3xl font-bold">Search Page</h1><p className="text-muted-foreground mt-4">Coming soon...</p></div>} />
+                <Route path="/search" element={<SearchPage />} />
                 <Route path="/properties/:propertyId" element={<PropertyDetailsPage />} />
                 <Route path="/become-host" element={<div className="container py-12"><h1 className="text-3xl font-bold">Become a Host</h1><p className="text-muted-foreground mt-4">Coming soon...</p></div>} />
                 <Route path="/help" element={<div className="container py-12"><h1 className="text-3xl font-bold">Help Center</h1><p className="text-muted-foreground mt-4">Coming soon...</p></div>} />
