@@ -17,6 +17,8 @@ import { EditPropertyPage } from '@/pages/host/properties-edit';
 import { SearchPage } from '@/pages/search';
 import { MyBookingsPage } from '@/pages/my-bookings';
 import { BookingDetailsPage } from '@/pages/booking-details';
+import { CheckoutPage } from '@/pages/checkout';
+import { OrderHistoryPage } from '@/pages/order-history';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +63,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <BookingDetailsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/checkout"
+                  element={
+                    <ProtectedRoute>
+                      <CheckoutPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders"
+                  element={
+                    <ProtectedRoute>
+                      <OrderHistoryPage />
                     </ProtectedRoute>
                   }
                 />
