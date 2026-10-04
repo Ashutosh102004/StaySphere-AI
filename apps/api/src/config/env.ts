@@ -2,6 +2,21 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const validateRequiredEnv = (varName: string, value: string | undefined): string => {
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${varName}. ` +
+      `This is a security-critical variable and must be set before starting the application.`
+    );
+  }
+  if (varName.includes('SECRET') && value.length < 32) {
+    throw new Error(
+      `${varName} must be at least 32 characters long for security. Current length: ${value.length}`
+    );
+  }
+  return value;
+};
+
 export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '5000', 10),
@@ -9,8 +24,8 @@ export const config = {
   mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/staysphere-ai',
   redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
   jwt: {
-    accessSecret: process.env.JWT_ACCESS_SECRET || 'change-this-secret',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'change-this-secret',
+    accessSecret: validateRequiredEnv('JWT_ACCESS_SECRET', process.env.JWT_ACCESS_SECRET),
+    refreshSecret: validateRequiredEnv('JWT_REFRESH_SECRET', process.env.JWT_REFRESH_SECRET),
     accessExpiration: process.env.JWT_ACCESS_EXPIRATION || '15m',
     refreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
   },
