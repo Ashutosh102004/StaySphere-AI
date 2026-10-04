@@ -19,6 +19,7 @@ import { MyBookingsPage } from '@/pages/my-bookings';
 import { BookingDetailsPage } from '@/pages/booking-details';
 import { CheckoutPage } from '@/pages/checkout';
 import { OrderHistoryPage } from '@/pages/order-history';
+import { HostEarningsPage } from '@/pages/host/earnings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -116,6 +117,14 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['HOST', 'ADMIN']}>
                       <CreatePropertyPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/host/earnings"
+                  element={
+                    <ProtectedRoute allowedRoles={['HOST', 'ADMIN']}>
+                      <HostEarningsPage />
                     </ProtectedRoute>
                   }
                 />
