@@ -7,6 +7,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  setupFiles: ['<rootDir>/src/__tests__/setup.ts'],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
@@ -14,5 +15,5 @@ module.exports = {
     '!src/**/*.model.ts',
   ],
   coverageDirectory: 'coverage',
-  transformIgnorePatterns: ['node_modules/(?!(mongoose)/)'],
+  transformIgnorePatterns: ['node_modules/(?!mongoose/)'],
 };
