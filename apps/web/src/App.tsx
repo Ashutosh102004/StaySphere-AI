@@ -29,6 +29,7 @@ import { AdminPropertiesPage } from '@/pages/admin/properties';
 import { AIChatPage } from '@/pages/ai-chat';
 import { PropertyRecommendationsPage } from '@/pages/property-recommendations';
 import { WishlistPage } from '@/pages/wishlist';
+import { UserProfilePage } from '@/pages/user-profile';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -165,6 +166,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <WishlistPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <UserProfilePage />
                     </ProtectedRoute>
                   }
                 />
