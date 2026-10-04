@@ -11,6 +11,9 @@ import { RegisterPage } from '@/pages/register';
 import { DashboardPage } from '@/pages/dashboard';
 import { PropertyDetailsPage } from '@/pages/property-details';
 import { PropertyAvailabilityPage } from '@/pages/host/property-availability';
+import { HostPropertiesPage } from '@/pages/host/properties';
+import { CreatePropertyPage } from '@/pages/host/properties-create';
+import { EditPropertyPage } from '@/pages/host/properties-edit';
 import { SearchPage } from '@/pages/search';
 import { MyBookingsPage } from '@/pages/my-bookings';
 import { BookingDetailsPage } from '@/pages/booking-details';
@@ -74,6 +77,30 @@ function App() {
                 />
 
                 {/* Host Routes */}
+                <Route
+                  path="/host/properties"
+                  element={
+                    <ProtectedRoute allowedRoles={['HOST', 'ADMIN']}>
+                      <HostPropertiesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/host/properties/:propertyId/edit"
+                  element={
+                    <ProtectedRoute allowedRoles={['HOST', 'ADMIN']}>
+                      <EditPropertyPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/host/properties/create"
+                  element={
+                    <ProtectedRoute allowedRoles={['HOST', 'ADMIN']}>
+                      <CreatePropertyPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="/host/*"
                   element={
