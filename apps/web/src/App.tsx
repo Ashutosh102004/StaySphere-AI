@@ -23,6 +23,9 @@ import { HostEarningsPage } from '@/pages/host/earnings';
 import { IdentityVerificationPage } from '@/pages/identity-verification';
 import { SupportTicketsPage } from '@/pages/support-tickets';
 import { TicketDetailsPage } from '@/pages/support-ticket-details';
+import { AdminAnalyticsDashboard } from '@/pages/admin/analytics';
+import { AdminUsersPage } from '@/pages/admin/users';
+import { AdminPropertiesPage } from '@/pages/admin/properties';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +110,32 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <TicketDetailsPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Admin Routes */}
+                <Route
+                  path="/admin/analytics"
+                  element={
+                    <ProtectedRoute allowedRoles={['ADMIN']}>
+                      <AdminAnalyticsDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/users"
+                  element={
+                    <ProtectedRoute allowedRoles={['ADMIN']}>
+                      <AdminUsersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/properties"
+                  element={
+                    <ProtectedRoute allowedRoles={['ADMIN']}>
+                      <AdminPropertiesPage />
                     </ProtectedRoute>
                   }
                 />
