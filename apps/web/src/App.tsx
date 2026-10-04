@@ -21,6 +21,8 @@ import { CheckoutPage } from '@/pages/checkout';
 import { OrderHistoryPage } from '@/pages/order-history';
 import { HostEarningsPage } from '@/pages/host/earnings';
 import { IdentityVerificationPage } from '@/pages/identity-verification';
+import { SupportTicketsPage } from '@/pages/support-tickets';
+import { TicketDetailsPage } from '@/pages/support-ticket-details';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -89,6 +91,22 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <IdentityVerificationPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/support/tickets"
+                  element={
+                    <ProtectedRoute>
+                      <SupportTicketsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/support/tickets/:ticketId"
+                  element={
+                    <ProtectedRoute>
+                      <TicketDetailsPage />
                     </ProtectedRoute>
                   }
                 />
