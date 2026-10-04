@@ -39,13 +39,23 @@ export const createBookingSchema = z
   );
 
 export const updateBookingStatusSchema = z.object({
-  status: z.enum(['CONFIRMED', 'CANCELLED', 'COMPLETED']),
+  status: z.enum(['CONFIRMED', 'COMPLETED']),
 });
 
 export const cancelBookingSchema = z.object({
   cancellationReason: z.string().min(10, 'Cancellation reason must be at least 10 characters').max(500).optional(),
 });
 
+export const confirmBookingSchema = z.object({
+  paymentId: z.string().min(1, 'Payment ID is required'),
+});
+
+export const completeBookingSchema = z.object({
+  notes: z.string().max(500).optional(),
+});
+
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 export type UpdateBookingStatusInput = z.infer<typeof updateBookingStatusSchema>;
 export type CancelBookingInput = z.infer<typeof cancelBookingSchema>;
+export type ConfirmBookingInput = z.infer<typeof confirmBookingSchema>;
+export type CompleteBookingInput = z.infer<typeof completeBookingSchema>;

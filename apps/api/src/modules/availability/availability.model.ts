@@ -6,6 +6,11 @@ export interface IAvailability extends Document {
   endDate: Date;
   available: boolean;
   customPrice?: number;
+  minStay?: number;
+  maxStay?: number;
+  leadDays?: number;
+  advanceNoticeDays?: number;
+  seasonName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +41,26 @@ const availabilitySchema = new Schema<IAvailability>(
     customPrice: {
       type: Number,
       min: 0,
+    },
+    minStay: {
+      type: Number,
+      min: 1,
+    },
+    maxStay: {
+      type: Number,
+      min: 1,
+    },
+    leadDays: {
+      type: Number,
+      min: 0,
+    },
+    advanceNoticeDays: {
+      type: Number,
+      min: 0,
+    },
+    seasonName: {
+      type: String,
+      maxlength: 50,
     },
   },
   {

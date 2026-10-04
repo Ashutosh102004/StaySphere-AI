@@ -4,6 +4,8 @@ import {
   createBookingSchema,
   updateBookingStatusSchema,
   cancelBookingSchema,
+  confirmBookingSchema,
+  completeBookingSchema,
 } from './booking.validation';
 import { asyncHandler } from '@/utils/async-handler';
 import { ApiResponse } from '@/utils/response';
@@ -189,3 +191,96 @@ export const getPropertyAvailability = asyncHandler(
     });
   }
 );
+
+export const confirmBooking = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { paymentId } = confirmBookingSchema.parse(req.body);
+
+  const booking = await bookingService.confirmBooking(
+    id,
+    req.user!.id,
+    { paymentId }
+  );
+
+  if (!booking) {
+    return ApiResponse.error(res, 'Booking not found', 'NOT_FOUND', 404);
+  }
+
+  return ApiResponse.success(
+    res,
+    { booking },
+    'Booking confirmed successfully'
+  );
+});
+
+export const completeBooking = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { notes } = completeBookingSchema.parse(req.body);
+
+  const booking = await bookingService.completeBooking(
+    id,
+    req.user!.id,
+    req.user!.role,
+    { notes }
+  );
+
+  if (!booking) {
+    return ApiResponse.error(res, 'Booking not found', 'NOT_FOUND', 404);
+  }
+
+  return ApiResponse.success(
+    res,
+    { booking },
+    'Booking completed successfully'
+  );
+});
+
+export const getBookingStatusTransitions = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const canAccess = await bookingService.canUserAccessBooking(
+    id,
+    req.user!.id,
+    req.user!.role
+  );
+
+  if (!canAccess) {
+    return ApiResponse.error(
+      res,
+      'You do not have permission to view this booking',
+      'AUTHORIZATION_ERROR',
+      403
+    );
+  }
+
+  const transitions = await bookingService.getBookingStatusTransitions(id);
+
+  return ApiResponse.success(res, transitions);
+});
+
+export const getBookingDetailsWithCalculations = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const canAccess = await bookingService.canUserAccessBooking(
+    id,
+    req.user!.id,
+    req.user!.role
+  );
+
+  if (!canAccess) {
+    return ApiResponse.error(
+      res,
+      'You do not have permission to view this booking',
+      'AUTHORIZATION_ERROR',
+      403
+    );
+  }
+
+  const details = await bookingService.getBookingDetails(id);
+
+  if (!details) {
+    return ApiResponse.error(res, 'Booking not found', 'NOT_FOUND', 404);
+  }
+
+  return ApiResponse.success(res, { booking: details });
+});

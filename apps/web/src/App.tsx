@@ -9,6 +9,8 @@ import { HomePage } from '@/pages/home';
 import { LoginPage } from '@/pages/login';
 import { RegisterPage } from '@/pages/register';
 import { DashboardPage } from '@/pages/dashboard';
+import { PropertyDetailsPage } from '@/pages/property-details';
+import { PropertyAvailabilityPage } from '@/pages/host/property-availability';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,10 +93,21 @@ function App() {
 
                 {/* Public Routes */}
                 <Route path="/search" element={<div className="container py-12"><h1 className="text-3xl font-bold">Search Page</h1><p className="text-muted-foreground mt-4">Coming soon...</p></div>} />
+                <Route path="/properties/:propertyId" element={<PropertyDetailsPage />} />
                 <Route path="/become-host" element={<div className="container py-12"><h1 className="text-3xl font-bold">Become a Host</h1><p className="text-muted-foreground mt-4">Coming soon...</p></div>} />
                 <Route path="/help" element={<div className="container py-12"><h1 className="text-3xl font-bold">Help Center</h1><p className="text-muted-foreground mt-4">Coming soon...</p></div>} />
                 <Route path="/terms" element={<div className="container py-12"><h1 className="text-3xl font-bold">Terms of Service</h1><p className="text-muted-foreground mt-4">Coming soon...</p></div>} />
                 <Route path="/privacy" element={<div className="container py-12"><h1 className="text-3xl font-bold">Privacy Policy</h1><p className="text-muted-foreground mt-4">Coming soon...</p></div>} />
+
+                {/* Host Routes */}
+                <Route
+                  path="/host/properties/:propertyId/availability"
+                  element={
+                    <ProtectedRoute allowedRoles={['HOST', 'ADMIN']}>
+                      <PropertyAvailabilityPage />
+                    </ProtectedRoute>
+                  }
+                />
 
                 {/* 404 */}
                 <Route path="*" element={<div className="container py-12 text-center"><h1 className="text-3xl font-bold">404 - Page Not Found</h1><p className="text-muted-foreground mt-4">The page you're looking for doesn't exist.</p></div>} />

@@ -7,7 +7,7 @@ export interface IPayment extends Document {
   razorpaySignature?: string;
   amount: number;
   currency: string;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUND_PENDING' | 'REFUNDED';
   metadata?: Record<string, any>;
   failureReason?: string;
   createdAt: Date;
@@ -46,7 +46,7 @@ const paymentSchema = new Schema<IPayment>(
     },
     status: {
       type: String,
-      enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'REFUNDED'],
+      enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'REFUND_PENDING', 'REFUNDED'],
       default: 'PENDING',
       index: true,
     },

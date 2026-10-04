@@ -52,4 +52,31 @@ router.patch(
   bookingController.cancelBooking
 );
 
+// Booking confirmation and completion (state machine)
+router.patch(
+  '/:id/confirm',
+  authenticate,
+  bookingController.confirmBooking
+);
+
+router.patch(
+  '/:id/complete',
+  authenticate,
+  authorize('HOST', 'ADMIN'),
+  bookingController.completeBooking
+);
+
+// Booking status transitions and details
+router.get(
+  '/:id/transitions',
+  authenticate,
+  bookingController.getBookingStatusTransitions
+);
+
+router.get(
+  '/:id/details',
+  authenticate,
+  bookingController.getBookingDetailsWithCalculations
+);
+
 export default router;

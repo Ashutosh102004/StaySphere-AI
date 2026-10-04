@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 interface User {
   id: string;

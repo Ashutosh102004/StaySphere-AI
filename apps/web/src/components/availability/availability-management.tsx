@@ -1,0 +1,336 @@
+import { useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import { Calendar, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
+import { Calendar as CalendarComponent } from './calendar';
+
+interface AvailabilityManagementProps {
+  propertyId: string;
+}
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+
+export function AvailabilityManagement({ propertyId }: AvailabilityManagementProps) {
+  const { accessToken } = useAuth();
+  const [activeTab, setActiveTab] = useState<'availability' | 'pricing' | 'requirements'>('availability');
+  const [selectedDates, setSelectedDates] = useState<{ start?: Date; end?: Date }>({});
+  const [blockType, setBlockType] = useState<'block' | 'unblock'>('block');
+  const [customPrice, setCustomPrice] = useState<string>('');
+
+  const axiosConfig = {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  };
+
+  const { data: availabilities, isLoading: loadingAvailabilities } = useQuery({
+    queryKey: ['availabilities', propertyId],
+    queryFn: async () => {
+      const response = await axios.get(
+        `${API_URL}/availability/properties/${propertyId}/list`,
+        axiosConfig
+      );
+      return response.data.data.availabilities;
+    },
+  });
+
+  const blockDatesMutation = useMutation({
+    mutationFn: async (dates: { start: Date; end: Date }) => {
+      const endpoint = blockType === 'block' ? '/availability/block/dates' : '/availability/block/dates';
+      const method = blockType === 'block' ? 'post' : 'delete';
+
+      const response = await axios({
+        method,
+        url: `${API_URL}${endpoint}`,
+        data: {
+          propertyId,
+          startDate: dates.start.toISOString(),
+          endDate: dates.end.toISOString(),
+        },
+        ...axiosConfig,
+      });
+      return response.data.data;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: blockType === 'block' ? 'Dates blocked successfully' : 'Dates unblocked successfully',
+      });
+      setSelectedDates({});
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to update dates',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const setPricingMutation = useMutation({
+    mutationFn: async (data: { start: Date; end: Date; price: number }) => {
+      const response = await axios.post(
+        `${API_URL}/availability/pricing/set`,
+        {
+          propertyId,
+          startDate: data.start.toISOString(),
+          endDate: data.end.toISOString(),
+          customPrice: data.price,
+        },
+        axiosConfig
+      );
+      return response.data.data;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Pricing updated successfully',
+      });
+      setSelectedDates({});
+      setCustomPrice('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to set pricing',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleDateClick = (date: Date) => {
+    if (!selectedDates.start) {
+      setSelectedDates({ start: date });
+    } else if (!selectedDates.end) {
+      if (date < selectedDates.start) {
+        setSelectedDates({ start: date, end: selectedDates.start });
+      } else {
+        setSelectedDates({ ...selectedDates, end: date });
+      }
+    } else {
+      setSelectedDates({ start: date });
+    }
+  };
+
+  const handleBlockDates = () => {
+    if (!selectedDates.start || !selectedDates.end) {
+      toast({
+        title: 'Error',
+        description: 'Please select both start and end dates',
+        variant: 'destructive',
+      });
+      return;
+    }
+    blockDatesMutation.mutate(selectedDates as { start: Date; end: Date });
+  };
+
+  const handleSetPricing = () => {
+    if (!selectedDates.start || !selectedDates.end) {
+      toast({
+        title: 'Error',
+        description: 'Please select both start and end dates',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (!customPrice || isNaN(parseFloat(customPrice))) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid price',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setPricingMutation.mutate({
+      start: selectedDates.start,
+      end: selectedDates.end,
+      price: parseFloat(customPrice),
+    });
+  };
+
+  const isDateBlocked = (date: Date) => {
+    return availabilities?.some(
+      (a: any) =>
+        !a.available &&
+        date >= new Date(a.startDate) &&
+        date < new Date(a.endDate)
+    ) ?? false;
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Availability Management
+          </CardTitle>
+          <CardDescription>
+            Manage your property's availability, pricing, and booking requirements
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Tabs */}
+          <div className="flex gap-2 border-b">
+            <button
+              onClick={() => setActiveTab('availability')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'availability'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Block Dates
+            </button>
+            <button
+              onClick={() => setActiveTab('pricing')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'pricing'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Pricing
+            </button>
+            <button
+              onClick={() => setActiveTab('requirements')}
+              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+                activeTab === 'requirements'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Requirements
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Calendar */}
+            <div>
+              <CalendarComponent
+                value={selectedDates.start}
+                disabled={(date) => date < new Date()}
+                blocked={isDateBlocked}
+                showMultiSelect={true}
+                onChange={handleDateClick}
+              />
+            </div>
+
+            {/* Controls */}
+            <div className="space-y-4">
+              {activeTab === 'availability' && (
+                <>
+                  <div>
+                    <Label>Block Type</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant={blockType === 'block' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setBlockType('block')}
+                      >
+                        Block Dates
+                      </Button>
+                      <Button
+                        variant={blockType === 'unblock' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setBlockType('unblock')}
+                      >
+                        Unblock Dates
+                      </Button>
+                    </div>
+                  </div>
+
+                  {selectedDates.start && selectedDates.end && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800 flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        Selected: {selectedDates.start.toLocaleDateString()} to{' '}
+                        {selectedDates.end.toLocaleDateString()}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleBlockDates}
+                    disabled={!selectedDates.start || !selectedDates.end || blockDatesMutation.isPending}
+                    className="w-full"
+                  >
+                    {blockDatesMutation.isPending ? 'Updating...' : `${blockType === 'block' ? 'Block' : 'Unblock'} Dates`}
+                  </Button>
+                </>
+              )}
+
+              {activeTab === 'pricing' && (
+                <>
+                  <div>
+                    <Label htmlFor="price">Custom Price</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      placeholder="Enter price per night"
+                      value={customPrice}
+                      onChange={(e) => setCustomPrice(e.target.value)}
+                      min="0"
+                      step="1"
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {selectedDates.start && selectedDates.end && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800 flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        Selected: {selectedDates.start.toLocaleDateString()} to{' '}
+                        {selectedDates.end.toLocaleDateString()}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleSetPricing}
+                    disabled={!selectedDates.start || !selectedDates.end || !customPrice || setPricingMutation.isPending}
+                    className="w-full"
+                  >
+                    {setPricingMutation.isPending ? 'Setting...' : 'Set Pricing'}
+                  </Button>
+                </>
+              )}
+
+              {activeTab === 'requirements' && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800 flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <div>Stay requirements (min/max nights, lead time) coming soon</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Current Blocking */}
+          {loadingAvailabilities ? (
+            <div className="text-center py-8 text-muted-foreground">Loading availability...</div>
+          ) : availabilities && availabilities.length > 0 ? (
+            <div>
+              <h4 className="font-semibold mb-3">Current Blocked Dates</h4>
+              <div className="space-y-2">
+                {availabilities
+                  .filter((a: any) => !a.available)
+                  .map((a: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded text-sm">
+                      <span>
+                        {new Date(a.startDate).toLocaleDateString()} - {new Date(a.endDate).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

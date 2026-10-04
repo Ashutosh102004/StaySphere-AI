@@ -1,7 +1,10 @@
 import { Booking, IBooking } from './booking.model';
 import { Property } from '../properties/property.model';
-import { CreateBookingInput } from './booking.validation';
+import { AvailabilityService } from '../availability/availability.service';
+import { CreateBookingInput, ConfirmBookingInput, CompleteBookingInput } from './booking.validation';
 import mongoose from 'mongoose';
+
+const availabilityService = new AvailabilityService();
 
 export class BookingService {
   async createBooking(
@@ -39,11 +42,38 @@ export class BookingService {
       throw new Error('Property is not available for the selected dates');
     }
 
-    // Calculate total price
-    const nights = Math.ceil(
-      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+    // Validate availability requirements (stay duration, lead time, advance notice)
+    const stayValidation = await availabilityService.validateStayDuration(
+      data.propertyId,
+      checkIn,
+      checkOut
     );
-    const totalPrice = nights * property.pricePerNight;
+    if (!stayValidation.valid) {
+      throw new Error(stayValidation.reason || 'Invalid stay duration');
+    }
+
+    const leadTimeValidation = await availabilityService.validateLeadTime(
+      data.propertyId,
+      checkIn
+    );
+    if (!leadTimeValidation.valid) {
+      throw new Error(leadTimeValidation.reason || 'Lead time requirement not met');
+    }
+
+    const advanceNoticeValidation = await availabilityService.validateAdvanceNotice(
+      data.propertyId,
+      checkIn
+    );
+    if (!advanceNoticeValidation.valid) {
+      throw new Error(advanceNoticeValidation.reason || 'Advance notice requirement not met');
+    }
+
+    // Calculate total price using effective pricing
+    const totalPrice = await this.calculateTotalPrice(
+      data.propertyId,
+      checkIn,
+      checkOut
+    );
 
     // Create booking
     const booking = await Booking.create({
@@ -265,6 +295,151 @@ export class BookingService {
     const isHost = property?.hostId.toString() === userId;
 
     return isHost;
+  }
+
+  async calculateTotalPrice(
+    propertyId: string,
+    checkIn: Date,
+    checkOut: Date
+  ): Promise<number> {
+    let total = 0;
+    const current = new Date(checkIn);
+
+    while (current < checkOut) {
+      const price = await availabilityService.getEffectivePrice(propertyId, current);
+      if (price) {
+        total += price;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+
+    return total;
+  }
+
+  async confirmBooking(
+    bookingId: string,
+    userId: string,
+    data: ConfirmBookingInput
+  ): Promise<IBooking | null> {
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return null;
+    }
+
+    if (booking.guestId.toString() !== userId) {
+      throw new Error('Only the guest can confirm this booking');
+    }
+
+    if (booking.status !== 'PENDING') {
+      throw new Error(
+        `Cannot confirm booking in ${booking.status} status. Must be in PENDING status.`
+      );
+    }
+
+    if (!data.paymentId || data.paymentId.trim().length === 0) {
+      throw new Error('Valid payment ID is required');
+    }
+
+    booking.status = 'CONFIRMED';
+    booking.expiresAt = undefined;
+    await booking.save();
+
+    return booking;
+  }
+
+  async completeBooking(
+    bookingId: string,
+    userId: string,
+    userRole: string,
+    _data: CompleteBookingInput
+  ): Promise<IBooking | null> {
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return null;
+    }
+
+    const property = await Property.findById(booking.propertyId);
+    const isHost = property?.hostId.toString() === userId;
+    const isAdmin = userRole === 'ADMIN';
+
+    if (!isHost && !isAdmin) {
+      throw new Error('Only the host or admin can complete this booking');
+    }
+
+    if (booking.status !== 'CONFIRMED') {
+      throw new Error(
+        `Cannot complete booking in ${booking.status} status. Must be in CONFIRMED status.`
+      );
+    }
+
+    booking.status = 'COMPLETED';
+    await booking.save();
+
+    return booking;
+  }
+
+  async getBookingStatusTransitions(
+    bookingId: string
+  ): Promise<{ current: string; allowed: string[] }> {
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+
+    const stateTransitions: Record<string, string[]> = {
+      PENDING: ['CANCELLED'],
+      PAYMENT_PENDING: ['CONFIRMED', 'CANCELLED'],
+      CONFIRMED: ['COMPLETED', 'CANCELLED'],
+      CANCELLED: [],
+      COMPLETED: [],
+      REFUND_PENDING: ['REFUNDED'],
+      REFUNDED: [],
+      FAILED: ['PENDING'],
+    };
+
+    return {
+      current: booking.status,
+      allowed: stateTransitions[booking.status] || [],
+    };
+  }
+
+  async getNightsCount(checkIn: Date, checkOut: Date): Promise<number> {
+    return Math.ceil(
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+    );
+  }
+
+  async getBookingDetails(
+    bookingId: string
+  ): Promise<any> {
+    const booking = await Booking.findById(bookingId)
+      .populate('propertyId', 'title location pricePerNight images')
+      .populate('guestId', 'email firstName lastName');
+
+    if (!booking) {
+      return null;
+    }
+
+    const nights = await this.getNightsCount(booking.checkIn, booking.checkOut);
+
+    return {
+      id: booking._id,
+      property: booking.propertyId,
+      guest: booking.guestId,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      guests: booking.guests,
+      nights,
+      totalPrice: booking.totalPrice,
+      status: booking.status,
+      guestDetails: booking.guestDetails,
+      expiresAt: booking.expiresAt,
+      createdAt: booking.createdAt,
+      updatedAt: booking.updatedAt,
+    };
   }
 
   async getPropertyAvailability(
