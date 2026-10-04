@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { ArrowLeft, MapPin, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookingCalendar } from '@/components/availability';
 import { useAuth } from '@/contexts/auth-context';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+import { useProperty } from '@/hooks/use-property';
+import { toast } from '@/hooks/use-toast';
 
 export function PropertyDetailsPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { usePropertyById, useCreateBooking } = useProperty();
   const [selectedDates, setSelectedDates] = useState<{ checkIn: Date; checkOut: Date } | null>(null);
+  const [numberOfGuests, setNumberOfGuests] = useState<number>(1);
 
   if (!propertyId) {
     return (
@@ -25,13 +25,8 @@ export function PropertyDetailsPage() {
     );
   }
 
-  const { data: property, isLoading, error } = useQuery({
-    queryKey: ['property', propertyId],
-    queryFn: async () => {
-      const response = await axios.get(`${API_URL}/properties/${propertyId}`);
-      return response.data.data.property;
-    },
-  });
+  const { data: property, isLoading, error } = usePropertyById(propertyId);
+  const createBookingMutation = useCreateBooking();
 
   if (isLoading) {
     return (
@@ -53,19 +48,43 @@ export function PropertyDetailsPage() {
     );
   }
 
-  const handleContinueBooking = () => {
+  const handleContinueBooking = async () => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
 
-    if (selectedDates) {
-      navigate('/bookings/new', {
-        state: {
-          propertyId,
-          checkIn: selectedDates.checkIn,
-          checkOut: selectedDates.checkOut,
-        },
+    if (!selectedDates) {
+      toast({
+        title: 'Error',
+        description: 'Please select dates',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const booking = await createBookingMutation.mutateAsync({
+        propertyId,
+        checkInDate: selectedDates.checkIn,
+        checkOutDate: selectedDates.checkOut,
+        numberOfGuests,
+        specialRequests: '',
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Booking created successfully!',
+      });
+
+      navigate(`/bookings/${booking._id}`, {
+        state: { booking },
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to create booking',
+        variant: 'destructive',
       });
     }
   };
@@ -194,6 +213,7 @@ export function PropertyDetailsPage() {
 
             <BookingCalendar
               propertyId={propertyId}
+              basePrice={property?.pricePerNight || 100}
               onDatesSelected={setSelectedDates}
             />
 

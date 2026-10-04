@@ -1,19 +1,15 @@
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAuth } from '@/contexts/auth-context';
 import { AvailabilityManagement } from '@/components/availability';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+import { useProperty } from '@/hooks/use-property';
 
 export function PropertyAvailabilityPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
-  const { accessToken } = useAuth();
+  const { usePropertyById } = useProperty();
 
   if (!propertyId) {
     return (
@@ -23,16 +19,7 @@ export function PropertyAvailabilityPage() {
     );
   }
 
-  const { data: property, isLoading, error } = useQuery({
-    queryKey: ['property', propertyId],
-    queryFn: async () => {
-      const response = await axios.get(
-        `${API_URL}/properties/${propertyId}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      return response.data.data.property;
-    },
-  });
+  const { data: property, isLoading, error } = usePropertyById(propertyId);
 
   if (isLoading) {
     return (
