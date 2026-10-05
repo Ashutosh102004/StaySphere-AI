@@ -51,7 +51,28 @@ export const getProperty = asyncHandler(async (req: Request, res: Response) => {
     return ApiResponse.error(res, 'Property not found', 'NOT_FOUND', 404);
   }
 
-  return ApiResponse.success(res, { property });
+  return ApiResponse.success(res, {
+    property: {
+      id: property._id,
+      title: property.title,
+      description: property.description,
+      propertyType: property.propertyType,
+      location: property.location,
+      maxGuests: property.maxGuests,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      pricePerNight: property.pricePerNight,
+      currency: property.currency,
+      amenities: property.amenities,
+      images: property.images,
+      cancellationPolicy: property.cancellationPolicy,
+      published: property.published,
+      rating: property.rating,
+      reviewCount: property.reviewCount,
+      createdAt: property.createdAt,
+      updatedAt: property.updatedAt,
+    },
+  });
 });
 
 export const getMyProperties = asyncHandler(async (req: Request, res: Response) => {
@@ -96,7 +117,30 @@ export const updateProperty = asyncHandler(async (req: Request, res: Response) =
     return ApiResponse.error(res, 'Property not found', 'NOT_FOUND', 404);
   }
 
-  return ApiResponse.success(res, { property }, 'Property updated successfully');
+  return ApiResponse.success(
+    res,
+    {
+      property: {
+        id: property._id,
+        title: property.title,
+        description: property.description,
+        propertyType: property.propertyType,
+        location: property.location,
+        maxGuests: property.maxGuests,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        pricePerNight: property.pricePerNight,
+        currency: property.currency,
+        amenities: property.amenities,
+        images: property.images,
+        cancellationPolicy: property.cancellationPolicy,
+        published: property.published,
+        createdAt: property.createdAt,
+        updatedAt: property.updatedAt,
+      },
+    },
+    'Property updated successfully'
+  );
 });
 
 export const deleteProperty = asyncHandler(async (req: Request, res: Response) => {
@@ -153,7 +197,26 @@ export const publishProperty = asyncHandler(async (req: Request, res: Response) 
 
   return ApiResponse.success(
     res,
-    { property },
+    {
+      property: {
+        id: property._id,
+        title: property.title,
+        description: property.description,
+        propertyType: property.propertyType,
+        location: property.location,
+        maxGuests: property.maxGuests,
+        bedrooms: property.bedrooms,
+        bathrooms: property.bathrooms,
+        pricePerNight: property.pricePerNight,
+        currency: property.currency,
+        amenities: property.amenities,
+        images: property.images,
+        cancellationPolicy: property.cancellationPolicy,
+        published: property.published,
+        createdAt: property.createdAt,
+        updatedAt: property.updatedAt,
+      },
+    },
     `Property ${published ? 'published' : 'unpublished'} successfully`
   );
 });

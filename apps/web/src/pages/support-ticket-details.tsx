@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,7 +121,6 @@ const getPriorityConfig = (priority: TicketPriority) => {
 
 export function TicketDetailsPage() {
   const navigate = useNavigate();
-  const { ticketId } = useParams();
   const { toast } = useToast();
   const [ticket, setTicket] = useState<TicketDetails>(MOCK_TICKET);
   const [newMessage, setNewMessage] = useState('');
@@ -163,13 +162,6 @@ export function TicketDetailsPage() {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-    });
-  };
-
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
@@ -239,7 +231,7 @@ export function TicketDetailsPage() {
                         <p className="text-sm">{message.message}</p>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formatDate(message.timestamp)} at {formatTime(message.timestamp)}
+                        {formatDate(message.timestamp)}
                       </p>
                     </div>
                   </div>

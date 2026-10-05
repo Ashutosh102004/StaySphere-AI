@@ -203,7 +203,7 @@ export function IdentityVerificationPage() {
               <CardTitle className="text-sm">Steps</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {STEPS.map((step, idx) => (
+              {STEPS.map((step) => (
                 <div
                   key={step.id}
                   className={`p-3 rounded-lg cursor-pointer transition-colors ${

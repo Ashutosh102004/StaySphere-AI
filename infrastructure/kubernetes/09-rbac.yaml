@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: staysphere-app
+  namespace: staysphere
+  labels:
+    app: staysphere
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: staysphere-app-role
+  namespace: staysphere
+spec:
+  rules:
+    # Allow reading ConfigMaps
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get", "list", "watch"]
+    # Allow reading Secrets
+    - apiGroups: [""]
+      resources: ["secrets"]
+      verbs: ["get", "list"]
+    # Allow reading Services
+    - apiGroups: [""]
+      resources: ["services"]
+      verbs: ["get", "list"]
+    # Allow reading Pods (for pod discovery)
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: staysphere-app-rolebinding
+  namespace: staysphere
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: staysphere-app-role
+subjects:
+  - kind: ServiceAccount
+    name: staysphere-app
+    namespace: staysphere

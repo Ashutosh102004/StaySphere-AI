@@ -1,25 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, MessageCircle, Sparkles, Home, MapPin } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-}
-
-interface Conversation {
-  _id: string;
-  title: string;
-  messages: Message[];
-  createdAt: string;
-  updatedAt: string;
 }
 
 const MOCK_INITIAL_MESSAGES: Message[] = [
@@ -41,7 +30,6 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 export function AIChatPage() {
-  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>(MOCK_INITIAL_MESSAGES);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);

@@ -1,0 +1,43 @@
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy root package files
+COPY package*.json ./
+COPY .npmrc* ./
+COPY tsconfig.json ./
+
+# Copy workspace packages
+COPY packages ./packages
+COPY apps/web ./apps/web
+
+# Install dependencies
+RUN npm ci
+
+# Build web app
+RUN npm run --workspace=@staysphere/web build
+
+# Runtime stage - use lightweight nginx for static SPA
+FROM nginx:alpine
+
+# Copy nginx config
+COPY infrastructure/docker/nginx.conf /etc/nginx/nginx.conf
+
+# Remove default nginx static files
+RUN rm -rf /usr/share/nginx/html/*
+
+# Copy built React app from builder
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+
+# Add health check script
+RUN apk add --no-cache curl
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost/ || exit 1
+
+# Expose port
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import { useBooking } from '@/hooks/use-booking';
 
 interface CheckoutData {
   bookingId: string;
@@ -87,42 +86,6 @@ export function CheckoutPage() {
       ...prev,
       [field]: formatted,
     }));
-  };
-
-  const validateGuestInfo = () => {
-    if (!guestInfo.firstName.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter first name',
-        variant: 'destructive',
-      });
-      return false;
-    }
-    if (!guestInfo.lastName.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter last name',
-        variant: 'destructive',
-      });
-      return false;
-    }
-    if (!guestInfo.email.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter email',
-        variant: 'destructive',
-      });
-      return false;
-    }
-    if (!guestInfo.phone.trim()) {
-      toast({
-        title: 'Error',
-        description: 'Please enter phone number',
-        variant: 'destructive',
-      });
-      return false;
-    }
-    return true;
   };
 
   const validatePaymentInfo = () => {

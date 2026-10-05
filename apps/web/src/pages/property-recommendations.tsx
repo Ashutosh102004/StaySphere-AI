@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Star, MapPin, Users, DollarSign, Heart, Share2, Sparkles } from 'lucide-react';
+import { Star, MapPin, Users, Heart, Share2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom';
@@ -111,11 +111,10 @@ const MOCK_RECOMMENDATIONS: Property[] = [
 
 export function PropertyRecommendationsPage() {
   const { toast } = useToast();
-  const [recommendations, setRecommendations] = useState<Property[]>(MOCK_RECOMMENDATIONS);
   const [sortBy, setSortBy] = useState('match');
   const [wishlist, setWishlist] = useState<string[]>([]);
 
-  const sortedRecommendations = [...recommendations].sort((a, b) => {
+  const sortedRecommendations = [...MOCK_RECOMMENDATIONS].sort((a, b) => {
     switch (sortBy) {
       case 'price-low':
         return a.pricePerNight - b.pricePerNight;
@@ -174,7 +173,7 @@ export function PropertyRecommendationsPage() {
             <SelectItem value="price-high">Price: High to Low</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-sm text-muted-foreground ml-auto">{recommendations.length} recommendations</span>
+        <span className="text-sm text-muted-foreground ml-auto">{MOCK_RECOMMENDATIONS.length} recommendations</span>
       </div>
 
       {/* Properties Grid */}
@@ -275,7 +274,7 @@ export function PropertyRecommendationsPage() {
       </div>
 
       {/* Empty State */}
-      {recommendations.length === 0 && (
+      {MOCK_RECOMMENDATIONS.length === 0 && (
         <Card>
           <CardContent className="py-12 text-center">
             <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-50" />

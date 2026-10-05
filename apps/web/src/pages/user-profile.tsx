@@ -288,7 +288,7 @@ export function UserProfilePage() {
                       <Shield className="h-4 w-4" />
                       Role
                     </p>
-                    <Badge className={getRoleColor(user.role)} className="mt-1">
+                    <Badge className={`${getRoleColor(user.role)} mt-1`}>
                       {user.role}
                     </Badge>
                   </div>
@@ -411,7 +411,7 @@ export function UserProfilePage() {
               </div>
               <Switch
                 checked={notifications.emailNotifications}
-                onCheckedChange={(value) => handleNotificationChange('emailNotifications', value)}
+                onCheckedChange={(value: boolean) => handleNotificationChange('emailNotifications', value)}
               />
             </div>
 
@@ -422,7 +422,7 @@ export function UserProfilePage() {
               </div>
               <Switch
                 checked={notifications.smsNotifications}
-                onCheckedChange={(value) => handleNotificationChange('smsNotifications', value)}
+                onCheckedChange={(value: boolean) => handleNotificationChange('smsNotifications', value)}
               />
             </div>
 
@@ -437,7 +437,7 @@ export function UserProfilePage() {
               </div>
               <Switch
                 checked={notifications.bookingUpdates}
-                onCheckedChange={(value) => handleNotificationChange('bookingUpdates', value)}
+                onCheckedChange={(value: boolean) => handleNotificationChange('bookingUpdates', value)}
               />
             </div>
 
@@ -448,7 +448,7 @@ export function UserProfilePage() {
               </div>
               <Switch
                 checked={notifications.newMessages}
-                onCheckedChange={(value) => handleNotificationChange('newMessages', value)}
+                onCheckedChange={(value: boolean) => handleNotificationChange('newMessages', value)}
               />
             </div>
 
@@ -459,7 +459,7 @@ export function UserProfilePage() {
               </div>
               <Switch
                 checked={notifications.reviews}
-                onCheckedChange={(value) => handleNotificationChange('reviews', value)}
+                onCheckedChange={(value: boolean) => handleNotificationChange('reviews', value)}
               />
             </div>
 
@@ -470,7 +470,7 @@ export function UserProfilePage() {
               </div>
               <Switch
                 checked={notifications.promotions}
-                onCheckedChange={(value) => handleNotificationChange('promotions', value)}
+                onCheckedChange={(value: boolean) => handleNotificationChange('promotions', value)}
               />
             </div>
           </CardContent>

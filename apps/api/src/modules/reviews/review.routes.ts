@@ -4,18 +4,18 @@ import { authenticate } from '@/middleware/auth.middleware';
 
 const router = Router();
 
-// Public routes
+// Public routes - specific routes first to avoid shadowing
 router.get('/properties/:propertyId/reviews', reviewController.getPropertyReviews);
 router.get('/properties/:propertyId/reviews/stats', reviewController.getReviewStats);
-router.get('/:id', reviewController.getReview);
 
-// Protected routes - users can only access their own reviews
-router.post('/', authenticate, reviewController.createReview);
+// Protected routes - specific routes first
 router.get('/my-reviews', authenticate, reviewController.getMyReviews);
+router.get('/can-review/:bookingId', authenticate, reviewController.canReviewBooking);
+router.post('/', authenticate, reviewController.createReview);
 router.patch('/:id', authenticate, reviewController.updateReview);
 router.delete('/:id', authenticate, reviewController.deleteReview);
 
-// Check if user can review a booking
-router.get('/can-review/:bookingId', authenticate, reviewController.canReviewBooking);
+// Generic catch-all last
+router.get('/:id', reviewController.getReview);
 
 export default router;

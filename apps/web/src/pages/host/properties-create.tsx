@@ -31,10 +31,8 @@ interface PropertyFormData {
   maxGuests: number;
   pricePerNight: number;
   amenities: string[];
-  images: Array<{
-    url: string;
-    altText?: string;
-  }>;
+  images: string[];
+  cancellationPolicy: 'FLEXIBLE' | 'MODERATE' | 'STRICT';
 }
 
 const PROPERTY_TYPES: PropertyType[] = ['HOUSE', 'APARTMENT', 'CONDO', 'VILLA', 'BED_AND_BREAKFAST', 'HOSTEL', 'HOTEL'];
@@ -80,6 +78,7 @@ export function CreatePropertyPage() {
     pricePerNight: 100,
     amenities: [],
     images: [],
+    cancellationPolicy: 'MODERATE',
   });
 
   const createPropertyMutation = useCreateProperty();
@@ -113,13 +112,7 @@ export function CreatePropertyPage() {
 
     setForm((prev) => ({
       ...prev,
-      images: [
-        ...prev.images,
-        {
-          url: imageUrl,
-          altText: `Property image ${prev.images.length + 1}`,
-        },
-      ],
+      images: [...prev.images, imageUrl],
     }));
     setImageUrl('');
   };
@@ -493,7 +486,7 @@ export function CreatePropertyPage() {
                   {form.images.map((img, idx) => (
                     <div key={idx} className="flex items-center justify-between gap-2 p-3 bg-muted rounded-lg">
                       <div className="flex-1 truncate">
-                        <img src={img.url} alt="" className="h-12 w-12 rounded object-cover" />
+                        <img src={img} alt="" className="h-12 w-12 rounded object-cover" />
                       </div>
                       <Button
                         variant="destructive"

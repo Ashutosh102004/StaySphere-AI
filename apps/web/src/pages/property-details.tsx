@@ -7,15 +7,17 @@ import { Badge } from '@/components/ui/badge';
 import { BookingCalendar } from '@/components/availability';
 import { useAuth } from '@/contexts/auth-context';
 import { useProperty } from '@/hooks/use-property';
+import { useBooking } from '@/hooks/use-booking';
 import { toast } from '@/hooks/use-toast';
 
 export function PropertyDetailsPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  const { usePropertyById, useCreateBooking } = useProperty();
+  const { usePropertyById } = useProperty();
+  const { useCreateBooking } = useBooking();
   const [selectedDates, setSelectedDates] = useState<{ checkIn: Date; checkOut: Date } | null>(null);
-  const [numberOfGuests, setNumberOfGuests] = useState<number>(1);
+  const [numberOfGuests] = useState<number>(1);
 
   if (!propertyId) {
     return (

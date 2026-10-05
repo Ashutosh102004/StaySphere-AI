@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { useProperty } from '@/hooks/use-property';
 
@@ -30,10 +29,8 @@ interface PropertyFormData {
   maxGuests: number;
   pricePerNight: number;
   amenities: string[];
-  images: Array<{
-    url: string;
-    altText?: string;
-  }>;
+  images: string[];
+  cancellationPolicy: 'FLEXIBLE' | 'MODERATE' | 'STRICT';
 }
 
 const PROPERTY_TYPES: PropertyType[] = ['HOUSE', 'APARTMENT', 'CONDO', 'VILLA', 'BED_AND_BREAKFAST', 'HOSTEL', 'HOTEL'];
@@ -82,6 +79,7 @@ export function EditPropertyPage() {
     pricePerNight: 100,
     amenities: [],
     images: [],
+    cancellationPolicy: 'MODERATE',
   });
 
   useEffect(() => {
@@ -119,13 +117,7 @@ export function EditPropertyPage() {
 
     setForm((prev) => ({
       ...prev,
-      images: [
-        ...prev.images,
-        {
-          url: imageUrl,
-          altText: `Property image ${prev.images.length + 1}`,
-        },
-      ],
+      images: [...prev.images, imageUrl],
     }));
     setImageUrl('');
   };
@@ -212,7 +204,7 @@ export function EditPropertyPage() {
     if (!propertyId) return;
 
     updatePropertyMutation.mutate(
-      { id: propertyId, data: form },
+      { id: propertyId, ...form },
       {
         onSuccess: () => {
           toast({
@@ -473,7 +465,7 @@ export function EditPropertyPage() {
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {form.images.map((img, idx) => (
                   <div key={idx} className="flex items-center justify-between gap-2 p-2 bg-muted rounded-lg">
-                    <img src={img.url} alt="" className="h-10 w-10 rounded object-cover" />
+                    <img src={img} alt="" className="h-10 w-10 rounded object-cover" />
                     <Button
                       variant="destructive"
                       size="sm"

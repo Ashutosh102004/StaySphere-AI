@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Heart, Trash2, Share2, MapPin, Star, Users, DollarSign, Filter } from 'lucide-react';
+import { Heart, Trash2, Share2, MapPin, Star, Users, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 
@@ -124,7 +124,6 @@ export function WishlistPage() {
     setIsShareDialogOpen(false);
   };
 
-  const totalValue = wishlist.reduce((sum, p) => sum + p.pricePerNight, 0);
   const avgRating = (wishlist.reduce((sum, p) => sum + p.rating, 0) / wishlist.length).toFixed(1);
 
   const formatDate = (date: string) => {
@@ -409,7 +408,7 @@ export function WishlistPage() {
           </DialogHeader>
 
           <div className="space-y-3">
-            {navigator.share && (
+            {typeof navigator !== 'undefined' && 'share' in navigator && (
               <Button onClick={() => handleShareAction('share')} className="w-full" variant="outline">
                 Share via App
               </Button>

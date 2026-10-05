@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Plus, Filter, AlertCircle, Clock, CheckCircle2, MessageSquare } from 'lucide-react';
+import { Plus, AlertCircle, Clock, CheckCircle2, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -163,13 +163,6 @@ export function SupportTicketsPage() {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-    });
-  };
-
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 

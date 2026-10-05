@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Trash2, MapPin, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -180,14 +180,6 @@ export function AdminPropertiesPage() {
     hidden: properties.filter((p) => p.status === 'hidden').length,
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   return (
     <div className="container py-8">
       {/* Header */}
@@ -355,7 +347,7 @@ export function AdminPropertiesPage() {
                             </div>
                             <div>
                               <Label className="text-sm text-muted-foreground">Status</Label>
-                              <Badge className={getStatusConfig(selectedProperty?.status || 'published').color} className="mt-2">
+                              <Badge className={`${getStatusConfig(selectedProperty?.status || 'published').color} mt-2`}>
                                 {getStatusConfig(selectedProperty?.status || 'published').label}
                               </Badge>
                             </div>
