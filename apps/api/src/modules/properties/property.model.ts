@@ -140,5 +140,6 @@ propertySchema.index({ published: 1, pricePerNight: 1 });
 propertySchema.index({ published: 1, maxGuests: 1, pricePerNight: 1 });
 propertySchema.index({ 'location.city': 1, published: 1 });
 propertySchema.index({ 'location.coordinates': '2dsphere' }); // Geospatial index
+propertySchema.index({ title: 'text', description: 'text', 'location.city': 'text' }); // Text index for $text search
 
 export const Property = mongoose.model<IProperty>('Property', propertySchema);

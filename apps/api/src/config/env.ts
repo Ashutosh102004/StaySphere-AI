@@ -35,9 +35,13 @@ export const config = {
     webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
   ai: {
-    provider: process.env.AI_PROVIDER || 'kiro',
-    model: process.env.AI_MODEL || 'claude-sonnet-4.5',
+    provider: process.env.AI_PROVIDER || 'groq',
+    model: process.env.AI_MODEL || 'openai/gpt-oss-120b',
+    baseUrl: process.env.AI_BASE_URL || '',
     apiKey: process.env.AI_API_KEY || '',
+    timeoutMs: parseInt(process.env.AI_TIMEOUT_MS || '30000', 10) || 30000,
+    maxTokens: parseInt(process.env.AI_MAX_TOKENS || '2048', 10) || 2048,
+    temperature: parseFloat(process.env.AI_TEMPERATURE || '0.7') || 0.7,
   },
   identity: {
     provider: process.env.IDENTITY_PROVIDER || 'mock',

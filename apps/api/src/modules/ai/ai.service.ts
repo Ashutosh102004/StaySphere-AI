@@ -18,65 +18,94 @@ interface AIProvider {
   generateDescription(prompt: string): Promise<string>;
 }
 
-class AnthropicProvider implements AIProvider {
-  constructor() {
-    // API configuration available via config.ai.apiKey and config.ai.model
+class OpenAICompatibleProvider implements AIProvider {
+  private readonly baseURL: string;
+  private readonly apiKey: string;
+  private readonly model: string;
+  private readonly timeoutMs: number;
+  private readonly maxTokens: number;
+  private readonly temperature: number;
+
+  constructor(baseURL: string, apiKey: string, model: string, timeoutMs: number, maxTokens: number, temperature: number) {
+    this.baseURL = baseURL;
+    this.apiKey = apiKey;
+    this.model = model;
+    this.timeoutMs = timeoutMs;
+    this.maxTokens = maxTokens;
+    this.temperature = temperature;
   }
 
-  async chat(messages: any[], _tools?: any[]): Promise<{ content: string; toolCalls?: any[] }> {
-    // This is a placeholder - in production, integrate with Anthropic API
-    // For now, return a mock response demonstrating the pattern
-    const lastMessage = messages[messages.length - 1]?.content || '';
+  private async request(body: unknown): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
-    // Simulate AI response based on message content
-    let response = "I'm here to help you with your vacation rental needs. ";
+    try {
+      const url = this.baseURL.replace(/\/+$/, '') + '/chat/completions';
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`,
+        },
+        body: typeof body === 'string' ? body : JSON.stringify(body),
+        signal: controller.signal,
+      });
+      return response;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
 
-    if (lastMessage.toLowerCase().includes('property')) {
-      response += "I can help you find the perfect property, generate descriptions, or optimize pricing.";
-    } else if (lastMessage.toLowerCase().includes('booking')) {
-      response += "I can assist with booking information and management.";
-    } else if (lastMessage.toLowerCase().includes('recommend')) {
-      response += "Based on your preferences, I'd be happy to suggest some great properties.";
-    } else {
-      response += "Feel free to ask about properties, bookings, or recommendations.";
+  async chat(messages: any[], tools?: any[]): Promise<{ content: string; toolCalls?: any[] }> {
+    const body: Record<string, unknown> = {
+      model: this.model,
+      messages,
+      max_tokens: this.maxTokens,
+      temperature: this.temperature,
+      stream: false,
+    };
+
+    if (tools && tools.length > 0) {
+      body.tools = tools;
     }
 
-    return { content: response };
+    const response = await this.request(body);
+
+    if (!response.ok) {
+      let message = `AI provider error: ${response.status} ${response.statusText}`;
+      try {
+        const text = await response.text();
+        const sanitized = text.replace(/Bearer\s+\S+/gi, 'Bearer ***');
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(sanitized);
+        } catch {
+          parsed = null;
+        }
+        if (typeof parsed === 'object' && parsed !== null && 'error' in parsed && typeof (parsed as any).error === 'object' && (parsed as any).error !== null && 'message' in (parsed as any).error) {
+          message += `: ${(parsed as any).error.message}`;
+        } else {
+          message += `: ${sanitized.slice(0, 300)}`;
+        }
+      } catch {
+        message += ': (empty response body)';
+      }
+      throw new Error(message);
+    }
+
+    const data: any = await response.json();
+    const choice = data.choices?.[0];
+    const message = choice?.message;
+
+    return {
+      content: message?.content ?? '',
+      toolCalls: message?.tool_calls,
+    };
   }
 
   async generateDescription(prompt: string): Promise<string> {
-    // Placeholder for actual Anthropic API call
-    return `Beautiful property featuring ${prompt}. This stunning space offers comfort and style in a prime location. Perfect for travelers seeking a memorable stay with modern amenities and welcoming atmosphere.`;
-  }
-}
-
-class OpenAIProvider implements AIProvider {
-  constructor() {
-    // API configuration available via process.env.OPENAI_API_KEY
-  }
-
-  async chat(messages: any[], _tools?: any[]): Promise<{ content: string; toolCalls?: any[] }> {
-    // Placeholder for OpenAI integration
-    return AnthropicProvider.prototype.chat.call(this, messages);
-  }
-
-  async generateDescription(prompt: string): Promise<string> {
-    return `Exquisite property: ${prompt}. A perfect blend of luxury and comfort awaits you.`;
-  }
-}
-
-class KiroProvider implements AIProvider {
-  constructor() {
-    // API configuration available via config.ai.apiKey and config.ai.model
-  }
-
-  async chat(messages: any[], _tools?: any[]): Promise<{ content: string; toolCalls?: any[] }> {
-    // Placeholder for Kiro API integration
-    return AnthropicProvider.prototype.chat.call(this, messages);
-  }
-
-  async generateDescription(prompt: string): Promise<string> {
-    return `Welcome to this exceptional property: ${prompt}. Experience unparalleled hospitality and comfort.`;
+    const response = await this.chat([{ role: 'user', content: prompt }]);
+    return response.content;
   }
 }
 
@@ -84,19 +113,23 @@ export class AIService {
   private provider: AIProvider;
 
   constructor() {
-    // Initialize the appropriate provider based on config
-    switch (config.ai.provider.toLowerCase()) {
-      case 'openai':
-        this.provider = new OpenAIProvider();
-        break;
-      case 'kiro':
-        this.provider = new KiroProvider();
-        break;
-      case 'anthropic':
-      default:
-        this.provider = new AnthropicProvider();
-        break;
+    // All supported providers now use OpenAI-compatible API
+    // Kiro and Anthropic providers should expose OpenAI-compatible endpoints
+    const baseURL = process.env.AI_BASE_URL || '';
+    const apiKey = process.env.AI_API_KEY || '';
+    const model = config.ai.model;
+    const timeoutMs = parseInt(process.env.AI_TIMEOUT_MS || '30000', 10) || 30000;
+    const maxTokens = config.ai.maxTokens;
+    const temperature = config.ai.temperature;
+
+    if (!baseURL) {
+      throw new Error('AI_BASE_URL is required for AI provider');
     }
+    if (!apiKey) {
+      throw new Error('AI_API_KEY is required for AI provider');
+    }
+
+    this.provider = new OpenAICompatibleProvider(baseURL, apiKey, model, timeoutMs, maxTokens, temperature);
   }
 
   // ========== Chat ==========
