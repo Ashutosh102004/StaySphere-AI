@@ -60,4 +60,7 @@ const aiMessageSchema = new Schema<IAIMessage>(
 // Index for efficient retrieval
 aiMessageSchema.index({ conversationId: 1, createdAt: 1 });
 
+// TTL index: auto-delete messages 1 year after creation
+aiMessageSchema.index({ createdAt: 1 }, { expireAfterSeconds: 31536000 });
+
 export const AIMessage = mongoose.model<IAIMessage>('AIMessage', aiMessageSchema);

@@ -39,4 +39,7 @@ const aiConversationSchema = new Schema<IAIConversation>(
 // Compound index for user conversations
 aiConversationSchema.index({ userId: 1, createdAt: -1 });
 
+// TTL index: auto-delete conversations 90 days after last update
+aiConversationSchema.index({ updatedAt: 1 }, { expireAfterSeconds: 7776000 });
+
 export const AIConversation = mongoose.model<IAIConversation>('AIConversation', aiConversationSchema);
