@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { useProperty } from '@/hooks/use-property';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 type PropertyType = 'HOUSE' | 'APARTMENT' | 'CONDO' | 'VILLA' | 'BED_AND_BREAKFAST' | 'HOSTEL' | 'HOTEL';
 
@@ -88,7 +89,7 @@ export function EditPropertyPage() {
     }
   }, [property]);
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = <K extends keyof PropertyFormData>(field: K, value: PropertyFormData[K]) => {
     setForm((prev) => ({
       ...prev,
       [field]: value,
@@ -213,10 +214,10 @@ export function EditPropertyPage() {
           });
           navigate('/host/properties');
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
           toast({
             title: 'Error',
-            description: error.response?.data?.message || 'Failed to update property',
+            description: getApiErrorMessage(error, 'Failed to update property'),
             variant: 'destructive',
           });
         },
@@ -295,7 +296,7 @@ export function EditPropertyPage() {
                 <select
                   id="propertyType"
                   value={form.propertyType}
-                  onChange={(e) => handleInputChange('propertyType', e.target.value)}
+                  onChange={(e) => handleInputChange('propertyType', e.target.value as PropertyType)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-2"
                 >
                   {PROPERTY_TYPES.map((type) => (

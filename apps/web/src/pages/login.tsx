@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth } from '@/contexts/auth-context-value';
 import { useToast } from '@/hooks/use-toast';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export function LoginPage() {
     password: '',
   });
 
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
+  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,10 +33,10 @@ export function LoginPage() {
         description: 'Logged in successfully',
       });
       navigate(from, { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.response?.data?.error?.message || 'Login failed',
+        description: getApiErrorMessage(error, 'Login failed', true),
         variant: 'destructive',
       });
     } finally {

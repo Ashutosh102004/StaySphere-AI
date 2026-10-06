@@ -1,6 +1,6 @@
 import { Property, IProperty } from './property.model';
 import { CreatePropertyInput, UpdatePropertyInput } from './property.validation';
-import mongoose from 'mongoose';
+import mongoose, { FilterQuery } from 'mongoose';
 
 export class PropertyService {
   async createProperty(
@@ -122,7 +122,7 @@ export class PropertyService {
       order = 'desc',
     } = filters;
 
-    const query: any = { published: true };
+    const query: FilterQuery<IProperty> = { published: true };
 
     if (city) {
       query['location.city'] = new RegExp(city, 'i');

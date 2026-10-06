@@ -104,7 +104,7 @@ export class IdentityVerificationService {
       throw new Error('Verification session not found');
     }
 
-    verification.status = data.status as any;
+    verification.status = data.status;
     if (data.metadata) {
       verification.metadata = {
         ...verification.metadata,

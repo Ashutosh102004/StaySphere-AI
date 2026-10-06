@@ -5,7 +5,7 @@ export interface IIdentityVerification extends Document {
   provider: string;
   providerSessionId?: string;
   status: 'NOT_STARTED' | 'PENDING' | 'VERIFIED' | 'FAILED' | 'REVIEW_REQUIRED' | 'EXPIRED';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   events: {
     status: string;
     timestamp: Date;

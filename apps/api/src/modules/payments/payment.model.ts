@@ -8,7 +8,7 @@ export interface IPayment extends Document {
   amount: number;
   currency: string;
   status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUND_PENDING' | 'REFUNDED';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   failureReason?: string;
   createdAt: Date;
   updatedAt: Date;

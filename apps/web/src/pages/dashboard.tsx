@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth } from '@/contexts/auth-context-value';
 
 export function DashboardPage() {
   const { user } = useAuth();

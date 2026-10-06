@@ -30,7 +30,11 @@ export class AuthService {
     };
   }
 
-  async login(data: LoginInput): Promise<{ user: IUser; accessToken: string; refreshToken: string }> {
+  async login(data: LoginInput): Promise<{
+    user: Pick<IUser, '_id' | 'email' | 'role' | 'emailVerified' | 'createdAt' | 'updatedAt'>;
+    accessToken: string;
+    refreshToken: string;
+  }> {
     const user = await User.findOne({ email: data.email }).select('+passwordHash');
     if (!user) {
       throw new Error('Invalid email or password');
@@ -44,8 +48,8 @@ export class AuthService {
     const accessToken = this.generateAccessToken(user);
     const refreshToken = this.generateRefreshToken(user);
 
-    const userObject = user.toObject() as IUser;
-    delete (userObject as any).passwordHash;
+    const { passwordHash: removedPasswordHash, ...userObject } = user.toObject();
+    void removedPasswordHash;
 
     return {
       user: userObject,

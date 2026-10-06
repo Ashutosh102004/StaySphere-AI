@@ -88,7 +88,9 @@ export class ReviewService {
     minRating?: number
   ): Promise<{ reviews: IReview[]; total: number; totalPages: number; averageRating: number }> {
     const skip = (page - 1) * limit;
-    const query: any = { propertyId: new mongoose.Types.ObjectId(propertyId) };
+    const query: { propertyId: mongoose.Types.ObjectId; rating?: { $gte: number } } = {
+      propertyId: new mongoose.Types.ObjectId(propertyId),
+    };
 
     if (minRating) {
       query.rating = { $gte: minRating };

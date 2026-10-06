@@ -1,8 +1,10 @@
 import { AIConversation } from './conversation.model';
-import { AIMessage } from './message.model';
-import { Property } from '../properties/property.model';
+import { AIMessage, IAIMessage } from './message.model';
+import { IAIConversation } from './conversation.model';
+import { Property, IProperty } from '../properties/property.model';
 import { Booking } from '../bookings/booking.model';
 import { Review } from '../reviews/review.model';
+import { FilterQuery } from 'mongoose';
 import {
   ChatMessageInput,
   GenerateDescriptionInput,
@@ -13,9 +15,45 @@ import {
 import { config } from '@/config/env';
 import { v4 as uuidv4 } from 'uuid';
 
+interface AIChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface AIChatToolCall {
+  id: string;
+  type: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+interface AICompletionResponse {
+  choices?: {
+    message?: {
+      content?: string | null;
+      tool_calls?: AIChatToolCall[];
+    };
+  }[];
+}
+
 interface AIProvider {
-  chat(messages: any[], tools?: any[]): Promise<{ content: string; toolCalls?: any[] }>;
+  chat(messages: AIChatMessage[], tools?: Record<string, unknown>[]): Promise<{ content: string; toolCalls?: AIChatToolCall[] }>;
   generateDescription(prompt: string): Promise<string>;
+}
+
+function getProviderErrorMessage(value: unknown): string | undefined {
+  if (typeof value !== 'object' || value === null || !('error' in value)) {
+    return undefined;
+  }
+
+  const error = value.error;
+  if (typeof error !== 'object' || error === null || !('message' in error)) {
+    return undefined;
+  }
+
+  return typeof error.message === 'string' ? error.message : undefined;
 }
 
 class OpenAICompatibleProvider implements AIProvider {
@@ -56,7 +94,7 @@ class OpenAICompatibleProvider implements AIProvider {
     }
   }
 
-  async chat(messages: any[], tools?: any[]): Promise<{ content: string; toolCalls?: any[] }> {
+  async chat(messages: AIChatMessage[], tools?: Record<string, unknown>[]): Promise<{ content: string; toolCalls?: AIChatToolCall[] }> {
     const body: Record<string, unknown> = {
       model: this.model,
       messages,
@@ -82,18 +120,14 @@ class OpenAICompatibleProvider implements AIProvider {
         } catch {
           parsed = null;
         }
-        if (typeof parsed === 'object' && parsed !== null && 'error' in parsed && typeof (parsed as any).error === 'object' && (parsed as any).error !== null && 'message' in (parsed as any).error) {
-          message += `: ${(parsed as any).error.message}`;
-        } else {
-          message += `: ${sanitized.slice(0, 300)}`;
-        }
+        message += `: ${getProviderErrorMessage(parsed) ?? sanitized.slice(0, 300)}`;
       } catch {
         message += ': (empty response body)';
       }
       throw new Error(message);
     }
 
-    const data: any = await response.json();
+    const data = await response.json() as AICompletionResponse;
     const choice = data.choices?.[0];
     const message = choice?.message;
 
@@ -160,7 +194,7 @@ export class AIService {
       .limit(20);
 
     // Build messages for AI
-    const messages = [
+    const messages: AIChatMessage[] = [
       {
         role: 'system',
         content: `You are StaySphere AI, a helpful vacation rental assistant. You help users find properties, understand booking processes, and get recommendations. Be friendly, concise, and helpful.`,
@@ -194,13 +228,13 @@ export class AIService {
     };
   }
 
-  async getConversations(userId: string): Promise<any[]> {
+  async getConversations(userId: string): Promise<IAIConversation[]> {
     return AIConversation.find({ userId })
       .sort({ updatedAt: -1 })
       .limit(20);
   }
 
-  async getConversationMessages(conversationId: string): Promise<any[]> {
+  async getConversationMessages(conversationId: string): Promise<IAIMessage[]> {
     return AIMessage.find({ conversationId }).sort({ createdAt: 1 });
   }
 
@@ -238,8 +272,8 @@ Generate an engaging property description (150-200 words) that highlights the un
 
   // ========== Smart Search ==========
 
-  async smartSearch(input: SearchPropertiesInput): Promise<any> {
-    const query: any = { published: true };
+  async smartSearch(input: SearchPropertiesInput) {
+    const query: FilterQuery<IProperty> = { published: true };
 
     // Text search
     if (input.query) {
@@ -282,7 +316,7 @@ Generate an engaging property description (150-200 words) that highlights the un
     return properties;
   }
 
-  private async rerankResults(_query: string, properties: any[]): Promise<any[]> {
+  private async rerankResults(_query: string, properties: IProperty[]): Promise<IProperty[]> {
     // Placeholder for AI-powered reranking
     // In production, use embeddings to calculate similarity
     return properties;
@@ -290,8 +324,8 @@ Generate an engaging property description (150-200 words) that highlights the un
 
   // ========== Recommendations ==========
 
-  async getRecommendations(input: GetRecommendationsInput): Promise<any[]> {
-    const query: any = { published: true };
+  async getRecommendations(input: GetRecommendationsInput): Promise<IProperty[]> {
+    const query: FilterQuery<IProperty> = { published: true };
 
     // Price range filter
     if (input.priceRange) {
@@ -316,7 +350,7 @@ Generate an engaging property description (150-200 words) that highlights the un
       // Get categories user has booked before
       const bookedPropertyIds = userBookings.map((b) => b.propertyId);
       const preferredProperties = properties.filter((p) =>
-        bookedPropertyIds.some((bp: any) => bp._id.toString() === p._id.toString())
+        bookedPropertyIds.some((bp) => bp.toString() === p._id.toString())
       );
 
       // Boost preferred properties
@@ -348,7 +382,7 @@ Generate an engaging property description (150-200 words) that highlights the un
 
   // ========== Price Optimization ==========
 
-  async optimizePrice(input: OptimizePriceInput): Promise<any> {
+  async optimizePrice(input: OptimizePriceInput) {
     const property = await Property.findById(input.propertyId);
 
     if (!property) {
@@ -360,7 +394,7 @@ Generate an engaging property description (150-200 words) that highlights the un
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
 
     // Calculate base price
-    let basePrice = property.pricePerNight * nights;
+    const basePrice = property.pricePerNight * nights;
 
     // Check for competitor data
     if (input.competitors && input.competitors.length > 0) {

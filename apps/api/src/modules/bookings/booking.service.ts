@@ -1,8 +1,13 @@
 import { Booking, IBooking } from './booking.model';
 import { Property } from '../properties/property.model';
 import { AvailabilityService } from '../availability/availability.service';
-import { CreateBookingInput, ConfirmBookingInput, CompleteBookingInput } from './booking.validation';
-import mongoose from 'mongoose';
+import {
+  CreateBookingInput,
+  ConfirmBookingInput,
+  CompleteBookingInput,
+  UpdateBookingStatusInput,
+} from './booking.validation';
+import mongoose, { FilterQuery } from 'mongoose';
 
 const availabilityService = new AvailabilityService();
 
@@ -97,7 +102,7 @@ export class BookingService {
     checkOut: Date,
     excludeBookingId?: string
   ): Promise<boolean> {
-    const query: any = {
+    const query: FilterQuery<IBooking> = {
       propertyId: new mongoose.Types.ObjectId(propertyId),
       status: { $in: ['PENDING', 'CONFIRMED'] },
       $or: [
@@ -122,7 +127,7 @@ export class BookingService {
     bookingId: string,
     userId?: string
   ): Promise<IBooking | null> {
-    const query: any = { _id: bookingId };
+    const query: FilterQuery<IBooking> = { _id: bookingId };
 
     const booking = await Booking.findOne(query)
       .populate('propertyId', 'title location pricePerNight images')
@@ -149,7 +154,7 @@ export class BookingService {
     status?: string
   ): Promise<{ bookings: IBooking[]; total: number; totalPages: number }> {
     const skip = (page - 1) * limit;
-    const query: any = { guestId: new mongoose.Types.ObjectId(guestId) };
+    const query: FilterQuery<IBooking> = { guestId: new mongoose.Types.ObjectId(guestId) };
 
     if (status) {
       query.status = status;
@@ -186,7 +191,7 @@ export class BookingService {
 
     const propertyIds = hostProperties.map((p) => p._id);
 
-    const query: any = { propertyId: { $in: propertyIds } };
+    const query: FilterQuery<IBooking> = { propertyId: { $in: propertyIds } };
 
     if (status) {
       query.status = status;
@@ -211,7 +216,7 @@ export class BookingService {
 
   async updateBookingStatus(
     bookingId: string,
-    status: string,
+    status: UpdateBookingStatusInput['status'],
     userId: string,
     userRole: string
   ): Promise<IBooking | null> {
@@ -232,7 +237,7 @@ export class BookingService {
       }
     }
 
-    booking.status = status as any;
+    booking.status = status;
     await booking.save();
 
     return booking;
@@ -354,6 +359,7 @@ export class BookingService {
     userRole: string,
     _data: CompleteBookingInput
   ): Promise<IBooking | null> {
+    void _data;
     const booking = await Booking.findById(bookingId);
 
     if (!booking) {
@@ -412,9 +418,7 @@ export class BookingService {
     );
   }
 
-  async getBookingDetails(
-    bookingId: string
-  ): Promise<any> {
+  async getBookingDetails(bookingId: string) {
     const booking = await Booking.findById(bookingId)
       .populate('propertyId', 'title location pricePerNight images')
       .populate('guestId', 'email firstName lastName');

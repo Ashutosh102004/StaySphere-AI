@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { BookingCalendar } from '@/components/availability';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth } from '@/contexts/auth-context-value';
 import { useProperty } from '@/hooks/use-property';
 import { useBooking } from '@/hooks/use-booking';
 import { toast } from '@/hooks/use-toast';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 export function PropertyDetailsPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
@@ -16,6 +17,8 @@ export function PropertyDetailsPage() {
   const { isAuthenticated } = useAuth();
   const { usePropertyById } = useProperty();
   const { useCreateBooking } = useBooking();
+  const { data: property, isLoading, error } = usePropertyById(propertyId || '');
+  const createBookingMutation = useCreateBooking();
   const [selectedDates, setSelectedDates] = useState<{ checkIn: Date; checkOut: Date } | null>(null);
   const [numberOfGuests] = useState<number>(1);
 
@@ -26,9 +29,6 @@ export function PropertyDetailsPage() {
       </div>
     );
   }
-
-  const { data: property, isLoading, error } = usePropertyById(propertyId);
-  const createBookingMutation = useCreateBooking();
 
   if (isLoading) {
     return (
@@ -82,10 +82,10 @@ export function PropertyDetailsPage() {
       navigate(`/bookings/${booking._id}`, {
         state: { booking },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.response?.data?.message || 'Failed to create booking',
+        description: getApiErrorMessage(error, 'Failed to create booking'),
         variant: 'destructive',
       });
     }

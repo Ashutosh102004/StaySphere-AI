@@ -6,8 +6,22 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { useBooking } from '@/hooks/use-booking';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'ALL';
+
+interface BookingListItem {
+  _id: string;
+  status: string;
+  propertyId?: {
+    title?: string;
+    location?: { city?: string };
+  };
+  numberOfGuests?: number;
+  checkInDate: string;
+  checkOutDate: string;
+  totalPrice: number;
+}
 
 export function MyBookingsPage() {
   const navigate = useNavigate();
@@ -17,7 +31,7 @@ export function MyBookingsPage() {
   const { data: bookings, isLoading, error } = useMyBookings();
   const cancelMutation = useCancelBooking();
 
-  const filteredBookings = bookings?.filter((booking: any) => {
+  const filteredBookings = bookings?.filter((booking: BookingListItem) => {
     if (statusFilter === 'ALL') return true;
     return booking.status === statusFilter;
   }) || [];
@@ -31,10 +45,10 @@ export function MyBookingsPage() {
             description: 'Booking cancelled successfully',
           });
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
           toast({
             title: 'Error',
-            description: error.response?.data?.message || 'Failed to cancel booking',
+            description: getApiErrorMessage(error, 'Failed to cancel booking'),
             variant: 'destructive',
           });
         },
@@ -149,7 +163,7 @@ export function MyBookingsPage() {
       {/* Bookings List */}
       {!isLoading && !error && filteredBookings.length > 0 && (
         <div className="space-y-4">
-          {filteredBookings.map((booking: any) => (
+          {filteredBookings.map((booking: BookingListItem) => (
             <Card key={booking._id} className="overflow-hidden hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

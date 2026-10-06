@@ -6,11 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { useBooking } from '@/hooks/use-booking';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 export function BookingDetailsPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const navigate = useNavigate();
   const { useBookingById, useCancelBooking } = useBooking();
+  const { data: booking, isLoading, error } = useBookingById(bookingId || '');
+  const cancelMutation = useCancelBooking();
 
   if (!bookingId) {
     return (
@@ -19,9 +22,6 @@ export function BookingDetailsPage() {
       </div>
     );
   }
-
-  const { data: booking, isLoading, error } = useBookingById(bookingId);
-  const cancelMutation = useCancelBooking();
 
   const handleCancelBooking = () => {
     if (
@@ -37,10 +37,10 @@ export function BookingDetailsPage() {
           });
           setTimeout(() => navigate('/bookings'), 1500);
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
           toast({
             title: 'Error',
-            description: error.response?.data?.message || 'Failed to cancel booking',
+            description: getApiErrorMessage(error, 'Failed to cancel booking'),
             variant: 'destructive',
           });
         },

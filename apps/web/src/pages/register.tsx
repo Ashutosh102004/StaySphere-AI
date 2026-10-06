@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth } from '@/contexts/auth-context-value';
 import { useToast } from '@/hooks/use-toast';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -47,10 +48,10 @@ export function RegisterPage() {
         description: 'Account created successfully',
       });
       navigate('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: error.response?.data?.error?.message || 'Registration failed',
+        description: getApiErrorMessage(error, 'Registration failed', true),
         variant: 'destructive',
       });
     } finally {

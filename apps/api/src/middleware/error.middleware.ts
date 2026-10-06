@@ -6,8 +6,9 @@ export const errorHandler = (
   err: unknown,
   _req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ) => {
+  void next;
   console.error('Error:', err);
 
   if (err instanceof ZodError) {

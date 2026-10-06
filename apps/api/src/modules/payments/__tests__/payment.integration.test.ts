@@ -5,7 +5,6 @@
 
 import request from 'supertest';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 
 jest.mock('@/modules/payments/payment.service', () => {
   const mockPaymentService = {
@@ -24,8 +23,20 @@ jest.mock('@/modules/payments/payment.service', () => {
 });
 
 import app from '@/app';
+import { connectMongo, clearDatabase, disconnectMongo } from '@/__tests__/mongo';
+import type { WebhookEventInput } from '@/modules/payments/payment.validation';
 
-let mongoServer: MongoMemoryServer;
+interface MockedPaymentService {
+  createOrder: jest.Mock;
+  verifyPayment: jest.Mock;
+  handlePaymentFailure: jest.Mock;
+  handleWebhookEvent: jest.Mock;
+  getPaymentById: jest.Mock;
+  getPaymentByBookingId: jest.Mock;
+  refundPayment: jest.Mock;
+  getPaymentStats: jest.Mock;
+}
+
 let hostToken: string;
 let guestToken: string;
 let PROPERTY_ID: string;
@@ -57,26 +68,21 @@ beforeAll(async () => {
   process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-for-jest-tests-only-888';
   process.env.JWT_ACCESS_EXPIRATION = '15m';
   process.env.JWT_REFRESH_EXPIRATION = '7d';
-  process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/staysphere-ai-test';
   process.env.NODE_ENV = 'test';
 
-  mongoServer = await MongoMemoryServer.create();
-  if (mongoose.connection.readyState !== 0) {
-    await mongoose.disconnect();
-  }
-  await mongoose.connect(mongoServer.getUri());
+  await connectMongo();
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
+  await disconnectMongo();
+});
+
+beforeEach(async () => {
+  await clearDatabase();
 });
 
 afterEach(async () => {
-  const collections = Object.values(mongoose.connection.collections);
-  for (const collection of collections) {
-    await collection.deleteMany({});
-  }
+  await clearDatabase();
 });
 
 async function registerHostAndGetToken() {
@@ -100,29 +106,29 @@ async function registerHostAndGetToken() {
   hostToken = hostLogin.body.data.accessToken;
 }
 
-async function registerGuestAndGetToken() {
+async function registerGuestAndGetToken(email = 'guest@test.com') {
   await request(app).post('/api/v1/auth/register').send({
-    email: 'guest@test.com',
+    email,
     password: 'Password123!',
     firstName: 'Guest',
     lastName: 'User',
   });
 
   const guestLogin = await request(app).post('/api/v1/auth/login').send({
-    email: 'guest@test.com',
+    email,
     password: 'Password123!',
   });
-  guestToken = guestLogin.body.data.accessToken;
+  return guestLogin.body.data.accessToken as string;
 }
 
-async function createBooking(propertyId: string) {
+async function createBooking(propertyId: string, token: string, checkInOffsetDays = 1) {
   const response = await request(app)
     .post('/api/v1/bookings/')
-    .set('Authorization', `Bearer ${guestToken}`)
+    .set('Authorization', `Bearer ${token}`)
     .send({
       propertyId,
-      checkIn: new Date(Date.now() + 86400000).toISOString(),
-      checkOut: new Date(Date.now() + 2 * 86400000).toISOString(),
+      checkIn: new Date(Date.now() + checkInOffsetDays * 86400000).toISOString(),
+      checkOut: new Date(Date.now() + (checkInOffsetDays + 1) * 86400000).toISOString(),
       guests: 2,
       guestDetails: [{ firstName: 'John', lastName: 'Doe', email: 'john@example.com', phone: '1234567890' }],
     })
@@ -150,7 +156,7 @@ async function completeBooking(bookingId: string) {
 describe('Payment API Integration', () => {
   beforeEach(async () => {
     await registerHostAndGetToken();
-    await registerGuestAndGetToken();
+    guestToken = await registerGuestAndGetToken();
 
     // Create published property
     const propResponse = await request(app)
@@ -168,10 +174,31 @@ describe('Payment API Integration', () => {
       .expect(200);
 
     // Create and complete booking
-    const bookingId = await createBooking(PROPERTY_ID);
+    const bookingId = await createBooking(PROPERTY_ID, guestToken);
     await confirmBooking(bookingId);
     await completeBooking(bookingId);
     BOOKING_ID = bookingId;
+
+    const { PaymentService } = await import('@/modules/payments/payment.service');
+    const mockService = new PaymentService() as unknown as MockedPaymentService;
+    mockService.createOrder.mockReset();
+    mockService.verifyPayment.mockReset();
+    mockService.handlePaymentFailure.mockReset();
+    mockService.handleWebhookEvent.mockReset();
+    mockService.getPaymentById.mockReset();
+    mockService.getPaymentByBookingId.mockReset();
+    mockService.refundPayment.mockReset();
+    mockService.getPaymentStats.mockReset();
+    mockService.createOrder.mockResolvedValue({
+      _id: new mongoose.Types.ObjectId(),
+      bookingId: BOOKING_ID,
+      razorpayOrderId: `order_${new mongoose.Types.ObjectId().toString()}`,
+      amount: 100,
+      currency: 'USD',
+      status: 'PENDING',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   });
 
   describe('POST /api/v1/payments/orders', () => {
@@ -179,7 +206,7 @@ describe('Payment API Integration', () => {
       const { PaymentService } = await import('@/modules/payments/payment.service');
       const mockPayment = {
         _id: new mongoose.Types.ObjectId(),
-        bookingId: new mongoose.Types.ObjectId(BOOKING_ID),
+        bookingId: BOOKING_ID,
         razorpayOrderId: 'order_' + Date.now(),
         amount: 100,
         currency: 'USD',
@@ -188,7 +215,7 @@ describe('Payment API Integration', () => {
         updatedAt: new Date(),
       };
 
-      const mockService = new PaymentService() as any;
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
       mockService.createOrder.mockResolvedValueOnce(mockPayment);
 
       const response = await request(app)
@@ -224,7 +251,7 @@ describe('Payment API Integration', () => {
         .expect(401);
     });
 
-    it('should return 403 when guest tries to pay for a host-owned booking', async () => {
+    it("should return 403 when a guest tries to pay for another guest's booking", async () => {
       await request(app)
         .post('/api/v1/bookings/')
         .set('Authorization', `Bearer ${hostToken}`)
@@ -235,24 +262,22 @@ describe('Payment API Integration', () => {
           guests: 2,
           guestDetails: [{ firstName: 'John', lastName: 'Doe', email: 'john@example.com', phone: '1234567890' }],
         })
+        .expect(201);
+
+      const otherGuestToken = await registerGuestAndGetToken('other-guest@test.com');
+      const otherGuestBookingId = await createBooking(PROPERTY_ID, otherGuestToken, 3);
+
+      const response = await request(app)
+        .post('/api/v1/payments/orders')
+        .set('Authorization', `Bearer ${guestToken}`)
+        .send({
+          bookingId: otherGuestBookingId,
+          amount: 100,
+          currency: 'USD',
+        })
         .expect(403);
 
-      const { Booking } = await import('@/modules/bookings/booking.model');
-
-      const booking = await Booking.findOne({});
-      if (booking) {
-        const response = await request(app)
-          .post('/api/v1/payments/orders')
-          .set('Authorization', `Bearer ${hostToken}`)
-          .send({
-            bookingId: booking._id.toString(),
-            amount: 100,
-            currency: 'USD',
-          })
-          .expect(403);
-
-        expect(response.body.data.errorType).toBe('AUTHORIZATION_ERROR');
-      }
+      expect(response.body.error.code).toBe('AUTHORIZATION_ERROR');
     });
 
     it('should return 400 for missing bookingId', async () => {
@@ -284,7 +309,7 @@ describe('Payment API Integration', () => {
       const { PaymentService } = await import('@/modules/payments/payment.service');
       const mockPayment = {
         _id: new mongoose.Types.ObjectId(),
-        bookingId: new mongoose.Types.ObjectId(BOOKING_ID),
+        bookingId: BOOKING_ID,
         razorpayOrderId: 'order_' + Date.now(),
         razorpayPaymentId: 'pay_test_123',
         razorpaySignature: 'sig_test_123',
@@ -297,12 +322,8 @@ describe('Payment API Integration', () => {
       ORDER_ID = mockPayment.razorpayOrderId;
       PAYMENT_ID = mockPayment._id.toString();
 
-      const mockService = new PaymentService() as any;
-      mockService.verifyPayment.mockResolvedValueOnce({
-        ...mockPayment,
-        razorpayPaymentId: 'pay_test_123',
-        status: 'COMPLETED',
-      });
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
+      mockService.verifyPayment.mockResolvedValue(null);
 
       await request(app)
         .post('/api/v1/payments/orders')
@@ -326,7 +347,7 @@ describe('Payment API Integration', () => {
         })
         .expect(400);
 
-      expect(response.body.data.errorType).toBe('PAYMENT_ERROR');
+      expect(response.body.error.code).toBe('PAYMENT_ERROR');
     });
 
     it('should return 400 when order id does not match any payment', async () => {
@@ -340,7 +361,7 @@ describe('Payment API Integration', () => {
         })
         .expect(400);
 
-      expect(response.body.data.errorType).toBe('PAYMENT_ERROR');
+      expect(response.body.error.code).toBe('PAYMENT_ERROR');
     });
   });
 
@@ -349,7 +370,7 @@ describe('Payment API Integration', () => {
       const { PaymentService } = await import('@/modules/payments/payment.service');
       const mockPayment = {
         _id: new mongoose.Types.ObjectId(),
-        bookingId: new mongoose.Types.ObjectId(BOOKING_ID),
+        bookingId: BOOKING_ID,
         razorpayOrderId: 'order_' + Date.now(),
         amount: 100,
         currency: 'USD',
@@ -357,9 +378,8 @@ describe('Payment API Integration', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-
-      const mockService = new PaymentService() as any;
-      mockService.getPaymentById.mockResolvedValueOnce(mockPayment);
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
+      mockService.getPaymentById.mockResolvedValue(mockPayment);
 
       const response = await request(app)
         .post('/api/v1/payments/orders')
@@ -381,50 +401,43 @@ describe('Payment API Integration', () => {
         .expect(200);
 
       expect(response.body.data.payment.status).toBe('PENDING');
-      expect(response.body.data.payment).toHaveProperty('bookingId');
+      expect(response.body.data.payment).toHaveProperty('razorpayOrderId');
       expect(response.body.data.payment).toHaveProperty('amount');
       expect(response.body.data.payment).toHaveProperty('currency');
     });
 
     it('should return 404 for non-existent payment', async () => {
       const fakeId = new mongoose.Types.ObjectId();
+      const { PaymentService } = await import('@/modules/payments/payment.service');
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
+      mockService.getPaymentById.mockResolvedValueOnce(null);
+
       await request(app)
         .get(`/api/v1/payments/${fakeId}`)
         .set('Authorization', `Bearer ${guestToken}`)
         .expect(404);
     });
 
-    it('should return 403 when guest tries to view a host-owned payment', async () => {
-      await request(app)
-        .post('/api/v1/bookings/')
-        .set('Authorization', `Bearer ${hostToken}`)
-        .send({
-          propertyId: PROPERTY_ID,
-          checkIn: new Date(Date.now() + 86400000).toISOString(),
-          checkOut: new Date(Date.now() + 2 * 86400000).toISOString(),
-          guests: 2,
-          guestDetails: [{ firstName: 'John', lastName: 'Doe', email: 'john@example.com', phone: '1234567890' }],
-        })
-        .expect(403);
-
-      const { Booking } = await import('@/modules/bookings/booking.model');
+    it("should return 403 when a guest tries to view another guest's payment", async () => {
       const { Payment } = await import('@/modules/payments/payment.model');
+      const { PaymentService } = await import('@/modules/payments/payment.service');
 
-      const booking = await Booking.findOne({});
-      if (booking) {
-        const payment = await Payment.create({
-          bookingId: booking._id,
-          razorpayOrderId: 'order_test123',
-          amount: 100,
-          currency: 'USD',
-          status: 'PENDING',
-        });
+      const otherGuestToken = await registerGuestAndGetToken('other-guest@test.com');
+      const otherGuestBookingId = await createBooking(PROPERTY_ID, otherGuestToken, 3);
+      const payment = await Payment.create({
+        bookingId: new mongoose.Types.ObjectId(otherGuestBookingId),
+        razorpayOrderId: `order_${new mongoose.Types.ObjectId().toString()}`,
+        amount: 100,
+        currency: 'USD',
+        status: 'PENDING',
+      });
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
+      mockService.getPaymentById.mockResolvedValueOnce(payment);
 
-        await request(app)
-          .get(`/api/v1/payments/${payment._id}`)
-          .set('Authorization', `Bearer ${hostToken}`)
-          .expect(403);
-      }
+      await request(app)
+        .get(`/api/v1/payments/${payment._id}`)
+        .set('Authorization', `Bearer ${guestToken}`)
+        .expect(403);
     });
   });
 
@@ -433,7 +446,7 @@ describe('Payment API Integration', () => {
       const { PaymentService } = await import('@/modules/payments/payment.service');
       const mockPayment = {
         _id: new mongoose.Types.ObjectId(),
-        bookingId: new mongoose.Types.ObjectId(BOOKING_ID),
+        bookingId: BOOKING_ID,
         razorpayOrderId: 'order_' + Date.now(),
         amount: 100,
         currency: 'USD',
@@ -441,8 +454,8 @@ describe('Payment API Integration', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const mockService = new PaymentService() as any;
-      mockService.getPaymentByBookingId.mockResolvedValueOnce(mockPayment);
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
+      mockService.getPaymentByBookingId.mockResolvedValue(mockPayment);
 
       const response = await request(app)
         .post('/api/v1/payments/orders')
@@ -464,12 +477,12 @@ describe('Payment API Integration', () => {
         .expect(200);
 
       expect(response.body.data.payment.status).toBe('PENDING');
-      expect(response.body.data.payment).toHaveProperty('bookingId');
+      expect(response.body.data.payment).toHaveProperty('razorpayOrderId');
     });
 
     it('should return 404 when no payment exists for booking', async () => {
       const { PaymentService } = await import('@/modules/payments/payment.service');
-      const mockService = new PaymentService() as any;
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
       mockService.getPaymentByBookingId.mockResolvedValueOnce(null);
 
       const response = await request(app)
@@ -477,17 +490,17 @@ describe('Payment API Integration', () => {
         .set('Authorization', `Bearer ${guestToken}`)
         .expect(404);
 
-      expect(response.body.data.errorType).toBe('NOT_FOUND');
+      expect(response.body.error.code).toBe('NOT_FOUND');
     });
   });
 
   describe('POST /api/v1/payments/:paymentId/refund', () => {
     beforeEach(async () => {
       const { PaymentService } = await import('@/modules/payments/payment.service');
-      const mockService = new PaymentService() as any;
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
       mockService.getPaymentById.mockResolvedValueOnce({
         _id: new mongoose.Types.ObjectId(),
-        bookingId: new mongoose.Types.ObjectId(BOOKING_ID),
+        bookingId: BOOKING_ID,
         razorpayOrderId: 'order_test',
         razorpayPaymentId: 'pay_test',
         amount: 100,
@@ -498,7 +511,7 @@ describe('Payment API Integration', () => {
       });
       mockService.refundPayment.mockResolvedValueOnce({
         _id: new mongoose.Types.ObjectId(),
-        bookingId: new mongoose.Types.ObjectId(BOOKING_ID),
+        bookingId: BOOKING_ID,
         razorpayOrderId: 'order_test',
         razorpayPaymentId: 'pay_test',
         amount: 100,
@@ -546,14 +559,17 @@ describe('Payment API Integration', () => {
   describe('POST /api/v1/payments/webhook', () => {
     it('should process a valid payment.authorized webhook', async () => {
       const { PaymentService } = await import('@/modules/payments/payment.service');
-      const mockService = new PaymentService() as any;
-      mockService.handleWebhookEvent.mockImplementationOnce((event: any) => {
+      const mockService = new PaymentService() as unknown as MockedPaymentService;
+      mockService.handleWebhookEvent.mockImplementationOnce((event: WebhookEventInput) => {
+        const paymentPayload = event.payload.payment as
+          | { id?: string; order_id?: string; status?: string }
+          | undefined;
         if (event.event === 'payment.authorized') {
           return Promise.resolve({
             _id: new mongoose.Types.ObjectId(),
-            razorpayOrderId: event.payload?.payment?.order_id,
-            razorpayPaymentId: event.payload?.payment?.id,
-            status: event.payload?.payment?.status === 'captured' ? 'COMPLETED' : 'PROCESSING',
+            razorpayOrderId: paymentPayload?.order_id,
+            razorpayPaymentId: paymentPayload?.id,
+            status: paymentPayload?.status === 'captured' ? 'COMPLETED' : 'PROCESSING',
             amount: 100,
             currency: 'USD',
             createdAt: new Date(),
@@ -629,7 +645,7 @@ describe('Payment API Integration', () => {
         const adminToken = adminLogin.body.data.accessToken;
 
         const { PaymentService } = await import('@/modules/payments/payment.service');
-        const mockService = new PaymentService() as any;
+        const mockService = new PaymentService() as unknown as MockedPaymentService;
         mockService.getPaymentStats.mockResolvedValueOnce([
           { _id: 'PENDING', count: 1, totalAmount: 100 },
         ]);

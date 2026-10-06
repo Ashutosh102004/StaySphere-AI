@@ -12,7 +12,7 @@ describe('PropertyService', () => {
   const mockHostId2 = '653a1b2c3d4e5f6a7b8c9d0f';
   const mockPropertyId = '653a1b2c3d4e5f6a7b8c9d10';
 
-  const mockProperty: any = {
+  const mockProperty = {
     _id: new mongoose.Types.ObjectId(mockPropertyId),
     hostId: new mongoose.Types.ObjectId(mockHostId),
     title: 'Test Property',

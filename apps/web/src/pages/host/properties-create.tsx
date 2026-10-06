@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { useProperty } from '@/hooks/use-property';
+import { getApiErrorMessage } from '@/lib/api-error';
 
 type PropertyType = 'HOUSE' | 'APARTMENT' | 'CONDO' | 'VILLA' | 'BED_AND_BREAKFAST' | 'HOSTEL' | 'HOTEL';
 type Step = 1 | 2 | 3 | 4;
@@ -83,7 +84,7 @@ export function CreatePropertyPage() {
 
   const createPropertyMutation = useCreateProperty();
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = <K extends keyof PropertyFormData>(field: K, value: PropertyFormData[K]) => {
     setForm((prev) => ({
       ...prev,
       [field]: value,
@@ -204,10 +205,10 @@ export function CreatePropertyPage() {
         });
         navigate('/host/properties');
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         toast({
           title: 'Error',
-          description: error.response?.data?.message || 'Failed to create property',
+          description: getApiErrorMessage(error, 'Failed to create property'),
           variant: 'destructive',
         });
       },
@@ -281,7 +282,7 @@ export function CreatePropertyPage() {
               <select
                 id="propertyType"
                 value={form.propertyType}
-                onChange={(e) => handleInputChange('propertyType', e.target.value)}
+                onChange={(e) => handleInputChange('propertyType', e.target.value as PropertyType)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-2"
               >
                 {PROPERTY_TYPES.map((type) => (

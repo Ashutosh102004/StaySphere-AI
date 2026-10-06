@@ -8,6 +8,7 @@ import {
   AddTicketMessageInput,
 } from './ticket.validation';
 import mongoose from 'mongoose';
+import { FilterQuery } from 'mongoose';
 
 export class SupportTicketService {
   async createTicket(userId: string, data: CreateTicketInput): Promise<ISupportTicket> {
@@ -45,7 +46,7 @@ export class SupportTicketService {
     limit: number = 20,
     offset: number = 0
   ): Promise<{ tickets: ISupportTicket[]; total: number }> {
-    const query: any = { userId };
+    const query: FilterQuery<ISupportTicket> = { userId: new mongoose.Types.ObjectId(userId) };
 
     if (status) {
       query.status = status;
@@ -71,7 +72,7 @@ export class SupportTicketService {
     limit: number = 20,
     offset: number = 0
   ): Promise<{ tickets: ISupportTicket[]; total: number }> {
-    const query: any = {};
+    const query: FilterQuery<ISupportTicket> = {};
 
     if (status) {
       query.status = status;

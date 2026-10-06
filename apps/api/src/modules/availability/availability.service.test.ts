@@ -36,7 +36,7 @@ describe('AvailabilityService', () => {
         endDate: '2024-01-10',
         available: true,
         customPrice: 150,
-      } as any);
+      });
 
       expect(result).toEqual(created);
       expect(Availability.create).toHaveBeenCalled();
@@ -49,7 +49,7 @@ describe('AvailabilityService', () => {
           startDate: '2024-01-10',
           endDate: '2024-01-01',
           available: true,
-        } as any)
+        })
       ).rejects.toThrow('End date must be after start date');
     });
 
@@ -62,7 +62,7 @@ describe('AvailabilityService', () => {
           startDate: '2024-01-01',
           endDate: '2024-01-10',
           available: true,
-        } as any)
+        })
       ).rejects.toThrow('Property not found');
     });
   });
@@ -149,7 +149,7 @@ describe('AvailabilityService', () => {
 
       const result = await service.updateAvailability('653a1b2c3d4e5f6a7b8c9d01', mockHostId, {
         available: false,
-      } as any);
+      });
 
       expect(result).toEqual(updated);
       expect(Availability.findByIdAndUpdate).toHaveBeenCalledWith(
@@ -164,7 +164,7 @@ describe('AvailabilityService', () => {
 
       const result = await service.updateAvailability('653a1b2c3d4e5f6a7b8c9d01', mockHostId, {
         available: false,
-      } as any);
+      });
 
       expect(result).toBeNull();
     });
@@ -177,7 +177,7 @@ describe('AvailabilityService', () => {
       await expect(
         service.updateAvailability('653a1b2c3d4e5f6a7b8c9d01', mockHostId, {
           available: false,
-        } as any)
+        })
       ).rejects.toThrow('You do not have permission to modify this availability');
     });
   });
@@ -215,7 +215,7 @@ describe('AvailabilityService', () => {
         propertyId: mockPropertyId,
         startDate: '2024-01-01',
         endDate: '2024-01-10',
-      } as any);
+      });
 
       expect(result).toEqual(blocked);
       expect(Availability.create).toHaveBeenCalled();
@@ -229,7 +229,7 @@ describe('AvailabilityService', () => {
           propertyId: mockPropertyId,
           startDate: '2024-01-01',
           endDate: '2024-01-10',
-        } as any)
+        })
       ).rejects.toThrow('Property not found');
     });
   });
@@ -242,7 +242,7 @@ describe('AvailabilityService', () => {
         propertyId: mockPropertyId,
         startDate: '2024-01-01',
         endDate: '2024-01-10',
-      } as any);
+      });
 
       expect(result).toEqual({ deletedCount: 2 });
       expect(Availability.deleteMany).toHaveBeenCalled();
@@ -260,7 +260,7 @@ describe('AvailabilityService', () => {
         startDate: '2024-01-01',
         endDate: '2024-01-10',
         customPrice: 200,
-      } as any);
+      });
 
       expect(result).toEqual(pricing);
     });

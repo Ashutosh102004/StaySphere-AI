@@ -3,29 +3,32 @@ import { Booking } from '../bookings/booking.model';
 import { config } from '@/config/env';
 import mongoose from 'mongoose';
 import crypto from 'crypto';
+import Razorpay from 'razorpay';
+import type { Orders } from 'razorpay/dist/types/orders';
+import { WebhookEventInput } from './payment.validation';
 
-interface RazorpayOrder {
+interface PaymentAuthorizedPayload {
   id: string;
-  entity: string;
-  amount: number;
-  amount_paid: number;
-  amount_due: number;
-  currency: string;
-  receipt: string;
-  offer_id?: string;
+  order_id: string;
   status: string;
-  attempts: number;
-  notes: Record<string, any>;
-  created_at: number;
+}
+
+interface PaymentFailedPayload {
+  order_id: string;
+  error_description: string;
+}
+
+interface RefundCreatedPayload {
+  payment_id: string;
+  status: string;
 }
 
 export class PaymentService {
-  private razorpayInstance: any;
+  private razorpayInstance: Razorpay | null = null;
 
   constructor() {
     // Initialize Razorpay if credentials are provided
     if (config.razorpay.keyId && config.razorpay.keySecret) {
-      const Razorpay = require('razorpay');
       this.razorpayInstance = new Razorpay({
         key_id: config.razorpay.keyId,
         key_secret: config.razorpay.keySecret,
@@ -56,11 +59,13 @@ export class PaymentService {
       },
     };
 
-    let razorpayOrder: RazorpayOrder;
+    let razorpayOrder: Orders.RazorpayOrder;
     try {
       razorpayOrder = await this.razorpayInstance.orders.create(orderOptions);
-    } catch (error: any) {
-      throw new Error(`Failed to create Razorpay order: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(
+        `Failed to create Razorpay order: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
 
     // Save payment record
@@ -126,7 +131,7 @@ export class PaymentService {
     return payment;
   }
 
-  async handleWebhookEvent(event: any): Promise<IPayment | null> {
+  async handleWebhookEvent(event: WebhookEventInput): Promise<IPayment | null> {
     // Verify webhook signature
     if (!this.verifyWebhookSignature(event)) {
       throw new Error('Invalid webhook signature');
@@ -134,17 +139,19 @@ export class PaymentService {
 
     switch (event.event) {
       case 'payment.authorized':
-        return await this.handlePaymentAuthorized(event.payload.payment);
+        return await this.handlePaymentAuthorized(
+          event.payload.payment as PaymentAuthorizedPayload
+        );
       case 'payment.failed':
-        return await this.handlePaymentFailed(event.payload.payment);
+        return await this.handlePaymentFailed(event.payload.payment as PaymentFailedPayload);
       case 'refund.created':
-        return await this.handleRefundCreated(event.payload.refund);
+        return await this.handleRefundCreated(event.payload.refund as RefundCreatedPayload);
       default:
         return null;
     }
   }
 
-  private async handlePaymentAuthorized(paymentPayload: any): Promise<IPayment> {
+  private async handlePaymentAuthorized(paymentPayload: PaymentAuthorizedPayload): Promise<IPayment> {
     const { id: paymentId, order_id: orderId, status } = paymentPayload;
 
     const payment = await Payment.findOne({ razorpayOrderId: orderId });
@@ -159,7 +166,7 @@ export class PaymentService {
     return payment;
   }
 
-  private async handlePaymentFailed(paymentPayload: any): Promise<IPayment> {
+  private async handlePaymentFailed(paymentPayload: PaymentFailedPayload): Promise<IPayment> {
     const { order_id: orderId, error_description } = paymentPayload;
 
     const payment = await Payment.findOne({ razorpayOrderId: orderId });
@@ -174,7 +181,7 @@ export class PaymentService {
     return payment;
   }
 
-  private async handleRefundCreated(refundPayload: any): Promise<IPayment> {
+  private async handleRefundCreated(refundPayload: RefundCreatedPayload): Promise<IPayment> {
     const { payment_id: paymentId, status } = refundPayload;
 
     const payment = await Payment.findOne({ razorpayPaymentId: paymentId });
@@ -202,7 +209,7 @@ export class PaymentService {
     return expectedSignature === signature;
   }
 
-  private verifyWebhookSignature(event: any): boolean {
+  private verifyWebhookSignature(event: WebhookEventInput): boolean {
     const webhookSignature = event.headers?.['x-razorpay-signature'];
     if (!webhookSignature) {
       return false;
@@ -267,8 +274,10 @@ export class PaymentService {
       await payment.save();
 
       return payment;
-    } catch (error: any) {
-      throw new Error(`Failed to initiate refund: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(
+        `Failed to initiate refund: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -284,8 +293,8 @@ export class PaymentService {
       .exec();
   }
 
-  async getPaymentStats(): Promise<any> {
-    const stats = await Payment.aggregate([
+  async getPaymentStats(): Promise<{ _id: IPayment['status']; count: number; totalAmount: number }[]> {
+    const stats = await Payment.aggregate<{ _id: IPayment['status']; count: number; totalAmount: number }>([
       {
         $group: {
           _id: '$status',

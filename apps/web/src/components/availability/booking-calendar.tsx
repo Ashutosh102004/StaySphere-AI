@@ -13,6 +13,13 @@ interface BookingCalendarProps {
   onDatesSelected?: (dates: { checkIn: Date; checkOut: Date }) => void;
 }
 
+interface AvailabilityPeriod {
+  available: boolean;
+  startDate: string | Date;
+  endDate: string | Date;
+  customPrice?: number;
+}
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
 export function BookingCalendar({ propertyId, basePrice = 100, onDatesSelected }: BookingCalendarProps) {
@@ -99,7 +106,7 @@ export function BookingCalendar({ propertyId, basePrice = 100, onDatesSelected }
   const isDateBlocked = (date: Date) => {
     if (!availability?.periods) return false;
     return availability.periods.some(
-      (p: any) =>
+      (p: AvailabilityPeriod) =>
         !p.available &&
         date >= new Date(p.startDate) &&
         date < new Date(p.endDate)
@@ -109,7 +116,7 @@ export function BookingCalendar({ propertyId, basePrice = 100, onDatesSelected }
   const getEffectivePrice = (date: Date) => {
     if (!availabilities) return basePrice;
     const period = availabilities.find(
-      (p: any) =>
+      (p: AvailabilityPeriod) =>
         p.customPrice &&
         date >= new Date(p.startDate) &&
         date < new Date(p.endDate)

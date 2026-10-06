@@ -4,11 +4,10 @@
 
 import request from 'supertest';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import app from '@/app';
+import { connectMongo, clearDatabase, disconnectMongo } from '@/__tests__/mongo';
 
-let mongoServer: MongoMemoryServer;
 let hostToken: string;
 let hostUserId: string;
 let guestToken: string;
@@ -37,26 +36,21 @@ beforeAll(async () => {
   process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-for-jest-tests-only-888';
   process.env.JWT_ACCESS_EXPIRATION = '15m';
   process.env.JWT_REFRESH_EXPIRATION = '7d';
-  process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/staysphere-ai-test';
   process.env.NODE_ENV = 'test';
 
-  mongoServer = await MongoMemoryServer.create();
-  if (mongoose.connection.readyState !== 0) {
-    await mongoose.disconnect();
-  }
-  await mongoose.connect(mongoServer.getUri());
+  await connectMongo();
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
+  await disconnectMongo();
+});
+
+beforeEach(async () => {
+  await clearDatabase();
 });
 
 afterEach(async () => {
-  const collections = Object.values(mongoose.connection.collections);
-  for (const collection of collections) {
-    await collection.deleteMany({});
-  }
+  await clearDatabase();
 });
 
 async function registerHostAndGetToken() {

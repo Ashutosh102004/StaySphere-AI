@@ -8,3 +8,6 @@ process.env.JWT_ACCESS_EXPIRATION = '15m';
 process.env.JWT_REFRESH_EXPIRATION = '7d';
 process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/staysphere-ai-test';
 process.env.NODE_ENV = 'test';
+process.env.RAZORPAY_KEY_ID = 'test-razorpay-key-id';
+process.env.RAZORPAY_KEY_SECRET = 'test-razorpay-key-secret';
+process.env.RAZORPAY_WEBHOOK_SECRET = 'test-razorpay-webhook-secret';

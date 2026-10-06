@@ -42,7 +42,7 @@ export const createPaymentOrder = asyncHandler(async (req: Request, res: Respons
     {
       payment: {
         id: payment._id,
-        bookingId: payment.bookingId,
+        bookingId: payment.bookingId.toString(),
         razorpayOrderId: payment.razorpayOrderId,
         amount: payment.amount,
         currency: payment.currency,
@@ -72,10 +72,10 @@ export const verifyPayment = asyncHandler(async (req: Request, res: Response) =>
     await bookingService.confirmBooking(payment.bookingId.toString(), req.user!.id, {
       paymentId: validatedData.razorpayPaymentId,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return ApiResponse.error(
       res,
-      error.message || 'Failed to confirm booking',
+      error instanceof Error ? error.message : 'Failed to confirm booking',
       'BOOKING_ERROR',
       400
     );
@@ -100,10 +100,10 @@ export const handlePaymentCallback = asyncHandler(async (req: Request, res: Resp
   try {
     await paymentService.handleWebhookEvent(webhookEvent);
     return ApiResponse.success(res, {}, 'Webhook processed successfully', 200);
-  } catch (error: any) {
+  } catch (error: unknown) {
     return ApiResponse.error(
       res,
-      error.message || 'Failed to process webhook',
+      error instanceof Error ? error.message : 'Failed to process webhook',
       'WEBHOOK_ERROR',
       400
     );

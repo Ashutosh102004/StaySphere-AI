@@ -1,60 +1,46 @@
 // Auth API Integration Tests
-// Tests the Auth controller/routes against a real Express app
-// backed by an in-memory MongoDB instance.
+// Tests the Auth controller/routes against the shared in-memory MongoDB instance.
 
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 
 import app from '@/app';
+import { clearDatabase, connectMongo, disconnectMongo } from '@/__tests__/mongo';
 
-let mongoServer: MongoMemoryServer;
+const registerPayload = {
+  email: 'integration-test@example.com',
+  password: 'Password123!',
+  firstName: 'Integration',
+  lastName: 'Tester',
+};
+
+const loginPayload = {
+  email: registerPayload.email,
+  password: registerPayload.password,
+};
 
 beforeAll(async () => {
-  // Set test-only JWT secrets FIRST - must be >= 32 characters
   process.env.JWT_ACCESS_SECRET = 'test-access-secret-for-jest-tests-only-999';
   process.env.JWT_REFRESH_SECRET = 'test-refresh-secret-for-jest-tests-only-888';
   process.env.JWT_ACCESS_EXPIRATION = '15m';
   process.env.JWT_REFRESH_EXPIRATION = '7d';
-  process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/staysphere-ai-test';
   process.env.NODE_ENV = 'test';
 
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-
-  // Connect mongoose to the test DB
-  if (mongoose.connection.readyState !== 0) {
-    await mongoose.disconnect();
-  }
-  await mongoose.connect(uri);
+  await connectMongo();
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
+  await disconnectMongo();
+});
+
+beforeEach(async () => {
+  await clearDatabase();
 });
 
 afterEach(async () => {
-  // Clean up any persisted data between tests
-  const collections = Object.values(mongoose.connection.collections);
-  for (const collection of collections) {
-    await collection.deleteMany({});
-  }
+  await clearDatabase();
 });
 
 describe('Auth API Integration', () => {
-  const registerPayload = {
-    email: 'integration-test@example.com',
-    password: 'Password123!',
-    firstName: 'Integration',
-    lastName: 'Tester',
-  };
-
-  const loginPayload = {
-    email: 'integration-test@example.com',
-    password: 'Password123!',
-  };
-
   describe('POST /api/v1/auth/register', () => {
     it('should successfully register a new user', async () => {
       const response = await request(app)
@@ -140,7 +126,7 @@ describe('Auth API Integration', () => {
         .expect(200);
 
       expect(response.headers['set-cookie']).toBeDefined();
-      const cookie = response.headers['set-cookie'][0];
+      const cookie = response.headers['set-cookie']![0];
       expect(cookie).toContain('refreshToken');
       expect(cookie.toLowerCase()).toContain('httponly');
     });
@@ -158,7 +144,7 @@ describe('Auth API Integration', () => {
         .send(loginPayload)
         .expect(200);
 
-      const refreshToken = loginResponse.headers['set-cookie'][0].match(/refreshToken=([^;]+)/)?.[1];
+      const refreshToken = loginResponse.headers['set-cookie']![0].match(/refreshToken=([^;]+)/)?.[1];
       expect(refreshToken).toBeDefined();
 
       const response = await request(app)
@@ -204,7 +190,7 @@ describe('Auth API Integration', () => {
         .send(loginPayload)
         .expect(200);
 
-      const accessToken = loginResponse.body.data.accessToken;
+      const accessToken = loginResponse.body.data.accessToken as string;
       expect(accessToken).toBeDefined();
 
       const response = await request(app)

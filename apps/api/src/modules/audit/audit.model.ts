@@ -5,7 +5,7 @@ export interface IAuditLog extends Document {
   action: string;
   entityType: string;
   entityId?: mongoose.Types.ObjectId;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   ipAddress?: string;
   userAgent?: string;
   timestamp: Date;

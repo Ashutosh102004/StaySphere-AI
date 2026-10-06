@@ -2,6 +2,8 @@ import { User, IUser } from '../users/user.model';
 import { Property } from '../properties/property.model';
 import { Booking, IBooking } from '../bookings/booking.model';
 import { Review } from '../reviews/review.model';
+import { IProperty } from '../properties/property.model';
+import { FilterQuery } from 'mongoose';
 import {
   UpdateUserRoleInput,
   UpdateUserStatusInput,
@@ -19,7 +21,7 @@ export class AdminService {
     search?: string
   ): Promise<{ users: IUser[]; total: number; totalPages: number }> {
     const skip = (page - 1) * limit;
-    const query: any = {};
+    const query: FilterQuery<IUser> = {};
 
     if (role) {
       query.role = role;
@@ -63,7 +65,7 @@ export class AdminService {
   }
 
   async updateUserStatus(data: UpdateUserStatusInput): Promise<IUser | null> {
-    const updateData: any = {};
+    const updateData: Partial<IUser> = {};
     if (data.emailVerified !== undefined) {
       updateData.emailVerified = data.emailVerified;
     }
@@ -110,9 +112,9 @@ export class AdminService {
     limit: number = 20,
     status?: 'published' | 'unpublished' | 'hidden',
     search?: string
-  ): Promise<{ properties: any[]; total: number; totalPages: number }> {
+  ) {
     const skip = (page - 1) * limit;
-    const query: any = {};
+    const query: FilterQuery<IProperty> = {};
 
     if (status === 'published') {
       query.published = true;
@@ -149,13 +151,13 @@ export class AdminService {
 
   async moderateProperty(
     data: PropertyModerationInput
-  ): Promise<any> {
+  ) {
     const property = await Property.findById(data.propertyId);
     if (!property) {
       throw new Error('Property not found');
     }
 
-    let update: any = {};
+    let update: Partial<IProperty> & { hidden?: boolean } = {};
 
     switch (data.action) {
       case 'approve':
@@ -198,9 +200,9 @@ export class AdminService {
     status?: string,
     startDate?: Date,
     endDate?: Date
-  ): Promise<{ bookings: any[]; total: number; totalPages: number }> {
+  ) {
     const skip = (page - 1) * limit;
-    const query: any = {};
+    const query: FilterQuery<IBooking> = {};
 
     if (status) {
       query.status = status;
@@ -251,24 +253,18 @@ export class AdminService {
 
   // ========== System Analytics ==========
 
-  async getAnalytics(data: GetAnalyticsInput): Promise<any> {
+  async getAnalytics(data: GetAnalyticsInput) {
     const { startDate, endDate } = data;
     // period parameter reserved for future detailed analytics
 
     // Build date filter
-    const dateFilter: any = {};
     const now = new Date();
-
-    if (startDate) {
-      dateFilter.$gte = new Date(startDate);
-    } else {
-      // Default to last 30 days
-      dateFilter.$gte = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    }
-
-    if (endDate) {
-      dateFilter.$lte = new Date(endDate);
-    }
+    const dateFilter: { $gte: Date; $lte?: Date } = {
+      $gte: startDate
+        ? new Date(startDate)
+        : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+      ...(endDate ? { $lte: new Date(endDate) } : {}),
+    };
 
     // Get counts
     const [
@@ -298,7 +294,7 @@ export class AdminService {
     ]);
 
     // Get booking status distribution
-    const bookingStatusDistribution = await Booking.aggregate([
+    const bookingStatusDistribution = await Booking.aggregate<{ _id: string; count: number }>([
       { $group: { _id: '$status', count: { $sum: 1 } } },
     ]);
 
@@ -329,11 +325,11 @@ export class AdminService {
         bookingsThisMonth,
       },
       bookingStatus: bookingStatusDistribution.reduce(
-        (acc: any, item: any) => {
+        (acc: Record<string, number>, item) => {
           acc[item._id] = item.count;
           return acc;
         },
-        {}
+        {} as Record<string, number>
       ),
       propertyDistribution,
       averagePropertyRating:
@@ -347,7 +343,7 @@ export class AdminService {
 
   // ========== Dashboard Stats ==========
 
-  async getDashboardStats(): Promise<any> {
+  async getDashboardStats() {
     const [
       totalUsers,
       totalHosts,

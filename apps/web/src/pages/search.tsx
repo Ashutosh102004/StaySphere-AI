@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useProperty } from '@/hooks/use-property';
+import type { PropertyCardData } from '@/types/property-card';
 
 const AMENITIES = [
   'WiFi',
@@ -263,7 +264,7 @@ export function SearchPage() {
           {!isLoading && !error && properties.length > 0 && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {properties.map((property: any) => (
+                {properties.map((property: PropertyCardData) => (
                   <a key={property._id} href={`/properties/${property._id}`}>
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                       {/* Property Image */}

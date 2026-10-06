@@ -28,9 +28,35 @@ const mockGuestId = '653a1b2c3d4e5f6a7b8c9d0f';
 const mockHostId = '653a1b2c3d4e5f6a7b8c9d10';
 const mockBookingId = '653a1b2c3d4e5f6a7b8c9d11';
 
+interface MockAvailabilityService {
+  validateStayDuration: jest.Mock;
+  validateLeadTime: jest.Mock;
+  validateAdvanceNotice: jest.Mock;
+  getEffectivePrice: jest.Mock;
+}
+
+interface MockBooking {
+  _id: string;
+  propertyId: string;
+  guestId: string;
+  checkIn: Date;
+  checkOut: Date;
+  guests: number;
+  totalPrice: number;
+  status: 'PENDING' | 'PAYMENT_PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REFUND_PENDING' | 'REFUNDED' | 'FAILED';
+  expiresAt: Date;
+  guestDetails: { firstName: string; lastName: string; email: string; phone: string }[];
+  createdAt: Date;
+  updatedAt: Date;
+  save: jest.Mock;
+  populate: jest.Mock;
+}
+
 // The shared AvailabilityService instance the module under test actually uses.
 // Access the shared instance from the mock.
-const mockAvailabilityService = (AvailabilityService as any).__sharedInstance || new AvailabilityService();
+const mockAvailabilityService = (
+  AvailabilityService as unknown as { __sharedInstance?: MockAvailabilityService }
+).__sharedInstance ?? new AvailabilityService() as unknown as MockAvailabilityService;
 
 const mockProperty = {
   _id: mockPropertyId,
@@ -41,7 +67,7 @@ const mockProperty = {
 };
 
 // Fresh booking per call so status mutations don't leak between tests.
-const createMockBooking = (overrides: Record<string, any> = {}) => ({
+const createMockBooking = (overrides: Partial<MockBooking> = {}) => ({
   _id: mockBookingId,
   propertyId: mockPropertyId,
   guestId: mockGuestId,

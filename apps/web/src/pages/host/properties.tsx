@@ -6,6 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { useProperty } from '@/hooks/use-property';
+import { getApiErrorMessage } from '@/lib/api-error';
+import type { PropertyCardData } from '@/types/property-card';
 
 export function HostPropertiesPage() {
   const navigate = useNavigate();
@@ -30,10 +32,10 @@ export function HostPropertiesPage() {
             description: 'Property deleted successfully',
           });
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
           toast({
             title: 'Error',
-            description: error.response?.data?.message || 'Failed to delete property',
+            description: getApiErrorMessage(error, 'Failed to delete property'),
             variant: 'destructive',
           });
         },
@@ -49,10 +51,10 @@ export function HostPropertiesPage() {
           description: 'Property published successfully',
         });
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         toast({
           title: 'Error',
-          description: error.response?.data?.message || 'Failed to publish property',
+          description: getApiErrorMessage(error, 'Failed to publish property'),
           variant: 'destructive',
         });
       },
@@ -67,10 +69,10 @@ export function HostPropertiesPage() {
           description: 'Property unpublished successfully',
         });
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         toast({
           title: 'Error',
-          description: error.response?.data?.message || 'Failed to unpublish property',
+          description: getApiErrorMessage(error, 'Failed to unpublish property'),
           variant: 'destructive',
         });
       },
@@ -103,7 +105,7 @@ export function HostPropertiesPage() {
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Published</p>
             <p className="text-3xl font-bold mt-2">
-              {properties.filter((p: any) => p.published).length}
+              {properties.filter((p: PropertyCardData) => p.published).length}
             </p>
           </CardContent>
         </Card>
@@ -111,7 +113,7 @@ export function HostPropertiesPage() {
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground">Drafts</p>
             <p className="text-3xl font-bold mt-2">
-              {properties.filter((p: any) => !p.published).length}
+              {properties.filter((p: PropertyCardData) => !p.published).length}
             </p>
           </CardContent>
         </Card>
@@ -160,7 +162,7 @@ export function HostPropertiesPage() {
       {!isLoading && !error && properties.length > 0 && (
         <>
           <div className="space-y-4 mb-8">
-            {properties.map((property: any) => (
+            {properties.map((property: PropertyCardData) => (
               <Card key={property._id} className="overflow-hidden hover:shadow-md transition-shadow">
                 <div className="flex gap-4">
                   {/* Image */}

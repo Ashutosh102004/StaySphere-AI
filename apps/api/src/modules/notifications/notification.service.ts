@@ -26,7 +26,7 @@ export class NotificationService {
     offset: number = 0,
     unreadOnly: boolean = false
   ): Promise<{ notifications: INotification[]; total: number }> {
-    const query: any = { userId };
+    const query: { userId: string; read?: boolean } = { userId };
 
     if (unreadOnly) {
       query.read = false;

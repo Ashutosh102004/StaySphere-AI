@@ -10,6 +10,7 @@ export function PropertyAvailabilityPage() {
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
   const { usePropertyById } = useProperty();
+  const { data: property, isLoading, error } = usePropertyById(propertyId || '');
 
   if (!propertyId) {
     return (
@@ -18,8 +19,6 @@ export function PropertyAvailabilityPage() {
       </div>
     );
   }
-
-  const { data: property, isLoading, error } = usePropertyById(propertyId);
 
   if (isLoading) {
     return (

@@ -12,6 +12,12 @@ interface AvailabilityManagementProps {
   propertyId: string;
 }
 
+interface AvailabilityPeriod {
+  available: boolean;
+  startDate: string | Date;
+  endDate: string | Date;
+}
+
 export function AvailabilityManagement({ propertyId }: AvailabilityManagementProps) {
   const [activeTab, setActiveTab] = useState<'availability' | 'pricing' | 'requirements'>('availability');
   const [selectedDates, setSelectedDates] = useState<{ start?: Date; end?: Date }>({});
@@ -146,7 +152,7 @@ export function AvailabilityManagement({ propertyId }: AvailabilityManagementPro
 
   const isDateBlocked = (date: Date) => {
     return availabilities?.some(
-      (a: any) =>
+      (a: AvailabilityPeriod) =>
         !a.available &&
         date >= new Date(a.startDate) &&
         date < new Date(a.endDate)
@@ -376,8 +382,8 @@ export function AvailabilityManagement({ propertyId }: AvailabilityManagementPro
               <h4 className="font-semibold mb-3">Current Blocked Dates</h4>
               <div className="space-y-2">
                 {availabilities
-                  .filter((a: any) => !a.available)
-                  .map((a: any, idx: number) => (
+                  .filter((a: AvailabilityPeriod) => !a.available)
+                  .map((a: AvailabilityPeriod, idx: number) => (
                     <div key={idx} className="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded text-sm">
                       <span>
                         {new Date(a.startDate).toLocaleDateString()} - {new Date(a.endDate).toLocaleDateString()}

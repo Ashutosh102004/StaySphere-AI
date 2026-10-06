@@ -4,7 +4,7 @@ export interface IAIConversation extends Document {
   conversationId: string;
   userId: mongoose.Types.ObjectId;
   title?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }

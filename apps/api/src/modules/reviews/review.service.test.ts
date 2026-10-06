@@ -23,7 +23,7 @@ describe('ReviewService', () => {
     status: 'COMPLETED',
   };
 
-  const mockReview: any = {
+  const mockReview = {
     _id: '653a1b2c3d4e5f6a7b8c9d11',
     propertyId: new mongoose.Types.ObjectId(mockPropertyId),
     userId: new mongoose.Types.ObjectId(mockUserId),
@@ -53,7 +53,7 @@ describe('ReviewService', () => {
         bookingId: mockBookingId,
         rating: 5,
         comment: 'Excellent stay!',
-      } as any);
+      });
 
       expect(result).toEqual(mockReview);
       expect(Booking.findOne).toHaveBeenCalledWith({
@@ -77,7 +77,7 @@ describe('ReviewService', () => {
           propertyId: mockPropertyId,
           bookingId: mockBookingId,
           rating: 5,
-        } as any)
+        })
       ).rejects.toThrow('Booking not found or does not belong to you');
     });
 
@@ -92,7 +92,7 @@ describe('ReviewService', () => {
           propertyId: mockPropertyId,
           bookingId: mockBookingId,
           rating: 5,
-        } as any)
+        })
       ).rejects.toThrow('You can only review completed bookings');
     });
 
@@ -104,7 +104,7 @@ describe('ReviewService', () => {
           propertyId: 'different-property-id',
           bookingId: mockBookingId,
           rating: 5,
-        } as any)
+        })
       ).rejects.toThrow('Property does not match the booking');
     });
 
@@ -117,7 +117,7 @@ describe('ReviewService', () => {
           propertyId: mockPropertyId,
           bookingId: mockBookingId,
           rating: 5,
-        } as any)
+        })
       ).rejects.toThrow('You have already reviewed this booking');
     });
   });
@@ -247,7 +247,7 @@ describe('ReviewService', () => {
       const result = await service.updateReview(mockReview._id, mockUserId, {
         rating: 4,
         comment: 'Updated comment',
-      } as any);
+      });
 
       expect(result).toEqual(mockReview);
       expect(mockReview.rating).toBe(4);
@@ -260,7 +260,7 @@ describe('ReviewService', () => {
 
       const result = await service.updateReview('nonexistent', mockUserId, {
         rating: 4,
-      } as any);
+      });
 
       expect(result).toBeNull();
     });

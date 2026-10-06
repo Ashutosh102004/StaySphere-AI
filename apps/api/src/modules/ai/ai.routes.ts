@@ -8,7 +8,7 @@ const router = Router();
 
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: process.env.NODE_ENV === 'test' ? 5000 : 20,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: ExpressRequest): string => {

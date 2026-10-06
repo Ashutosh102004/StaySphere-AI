@@ -1,7 +1,8 @@
 import { Response } from 'express';
+import { ZodIssue } from 'zod';
 
 export class ApiResponse {
-  static success(res: Response, data: any = null, message: string = 'Success', statusCode: number = 200) {
+  static success(res: Response, data: unknown = null, message: string = 'Success', statusCode: number = 200) {
     return res.status(statusCode).json({
       success: true,
       data,
@@ -19,7 +20,7 @@ export class ApiResponse {
     });
   }
 
-  static validationError(res: Response, errors: any) {
+  static validationError(res: Response, errors: ZodIssue[]) {
     return res.status(400).json({
       success: false,
       error: {

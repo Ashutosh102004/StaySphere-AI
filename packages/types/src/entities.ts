@@ -88,7 +88,7 @@ export interface Payment {
   amount: number;
   currency: string;
   status: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
 }
 
@@ -108,7 +108,7 @@ export interface IdentityVerification {
   provider: string;
   providerSessionId?: string;
   status: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -128,7 +128,7 @@ export interface AIConversation {
   id: string;
   conversationId: string;
   userId: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -138,7 +138,7 @@ export interface AIMessage {
   conversationId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  toolCalls?: any[];
-  toolResults?: any[];
+  toolCalls?: Record<string, unknown>[];
+  toolResults?: Record<string, unknown>[];
   createdAt: Date;
 }
