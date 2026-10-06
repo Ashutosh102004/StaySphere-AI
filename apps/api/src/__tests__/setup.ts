@@ -11,3 +11,5 @@ process.env.NODE_ENV = 'test';
 process.env.RAZORPAY_KEY_ID = 'test-razorpay-key-id';
 process.env.RAZORPAY_KEY_SECRET = 'test-razorpay-key-secret';
 process.env.RAZORPAY_WEBHOOK_SECRET = 'test-razorpay-webhook-secret';
+process.env.AI_BASE_URL = 'https://ai.test.invalid/v1';
+process.env.AI_API_KEY = 'test-ai-api-key';
